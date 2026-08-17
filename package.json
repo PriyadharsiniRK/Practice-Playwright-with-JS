@@ -1,0 +1,15 @@
+{
+  "name": "practice-playwright-with-js",
+  "version": "1.0.0",
+  "description": "Playwright (JavaScript) test automation practice project",
+  "main": "index.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "report": "playwright show-report"
+  },
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.62.1"
+  }
+}
