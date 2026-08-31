@@ -22,7 +22,28 @@ test('Search YouTube via Google and play a video result', async ({ page }, testI
     await searchBox.fill('youtube.com');
     await searchBox.press('Enter');
 
-    await page.waitForSelector('#search');
+    // Google's consent flow sometimes redirects to a separate consent page
+    // after submitting a search rather than before, and shared/datacenter
+    // IPs (like CI runners) can trigger an interstitial "unusual traffic"
+    // check. Handle both before falling back to the normal results wait.
+    await page.waitForLoadState('domcontentloaded');
+    const postSearchConsent = page.getByRole('button', { name: /accept all|i agree/i });
+    if (await postSearchConsent.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await postSearchConsent.click();
+    }
+
+    const unusualTraffic = page.getByText(/unusual traffic|not a robot/i);
+    if (await unusualTraffic.isVisible({ timeout: 3000 }).catch(() => false)) {
+      throw new Error(
+        'Google served an "unusual traffic" / CAPTCHA interstitial instead of search results. ' +
+          'This happens when the request comes from a shared/datacenter IP (e.g. CI runners) that ' +
+          'Google flags as automated - it is not a locator or app bug.'
+      );
+    }
+
+    // Google's results container id has varied ("#search", "#rso", "#rcnt")
+    // across experiments, so accept any of them instead of a single id.
+    await page.locator('#search, #rso, #rcnt').first().waitFor({ state: 'visible', timeout: 20000 });
     await testInfo.attach('01-google-search-results', {
       body: await page.screenshot(),
       contentType: 'image/png',

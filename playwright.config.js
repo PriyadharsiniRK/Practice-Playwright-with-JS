@@ -13,6 +13,10 @@ module.exports = defineConfig({
     ['list'],
   ],
 
+  expect: {
+    timeout: 10000,
+  },
+
   use: {
     baseURL: 'https://www.google.com',
     trace: 'on-first-retry',
