@@ -37,12 +37,16 @@ test.describe('OrangeHRM - Login and Add Job Title (TC04)', () => {
 
     for (const row of jobRows) {
       await test.step(`Click on Jobs and click on +Add button (${row.TestCaseId})`, async () => {
-        // "Job" isn't a direct link to a page - it's a nav item that opens a
-        // submenu (Job Titles, Pay Grades, Employment Status, ...). Open it,
-        // then click "Job Titles" to actually navigate.
+        // "Job" isn't a direct link to a page - it's a nav item that reveals
+        // a submenu (Job Titles, Pay Grades, Employment Status, ...) on
+        // hover. Using .click() here is unreliable across iterations of
+        // this loop: on the 2nd+ row, the Job section is already active
+        // (we're sitting on its own Job Titles list page), and a repeated
+        // click can toggle an already-open menu closed instead of opening
+        // it. Hovering doesn't have that toggle ambiguity.
         const jobTab = page.getByText('Job', { exact: true }).first();
         await jobTab.waitFor({ state: 'visible' });
-        await jobTab.click();
+        await jobTab.hover();
         const jobTitlesMenuItem = page.getByRole('menuitem', { name: 'Job Titles' });
         await jobTitlesMenuItem.waitFor({ state: 'visible' });
         await jobTitlesMenuItem.click();
