@@ -13,6 +13,27 @@ Automated from the manual test case `Youtube_Test.docx`:
 
 Spec file: [`tests/youtube-search.spec.js`](tests/youtube-search.spec.js)
 
+## Test: OrangeHRM - Login and Add Job Title (TC04)
+
+Automated from the manual test case `OrangeHRM_LoginAddJob_TC04.docx`:
+
+1. Login to OrangeHRM (`opensource-demo.orangehrmlive.com`, Admin/admin123).
+2. Land on the dashboard.
+3. Navigate to Admin > Job.
+4. Click **+ Add** and fill in the Job Title / Job Description.
+5. Save and verify the new job title appears in the list.
+
+Test data (job title & description) is **data-driven from an Excel file**
+instead of being hardcoded or read from JSON — the spec loops over every row
+in `testdata/AddJobTitle.xlsx` and runs the same steps once per row.
+
+- Spec file: [`tests/orangehrm-add-job.spec.js`](tests/orangehrm-add-job.spec.js)
+- Excel reader helper: [`utils/excelReader.js`](utils/excelReader.js) (uses [`exceljs`](https://www.npmjs.com/package/exceljs))
+- Test data: [`testdata/AddJobTitle.xlsx`](testdata/AddJobTitle.xlsx)
+
+To add more test cases, just add more rows to the Excel sheet — no code
+changes needed. Columns: `TestCaseId`, `JobTitle`, `JobDescription`.
+
 ## Setup
 
 ```bash
