@@ -47,6 +47,12 @@ test.describe('OrangeHRM - Login and Add Job Title (TC04)', () => {
   });
 
   test('Add Job Title from Excel data', async ({ page }, testInfo) => {
+    // This test logs in once and then loops through every row in the Excel
+    // sheet, and openJobTitlesMenu() can take several attempts per row to
+    // reliably open the "Job" submenu - comfortably longer than the
+    // framework's 30s default for a multi-row, multi-step flow like this.
+    test.setTimeout(90000);
+
     await test.step('Login to OrangeHRM', async () => {
       await page.goto(ORANGEHRM_URL);
       await page.locator('input[name="username"]').fill('Admin');
