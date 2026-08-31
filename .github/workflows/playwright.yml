@@ -31,6 +31,15 @@ jobs:
       - name: Run Playwright tests
         run: npx playwright test ${{ github.event.inputs.test_file }}
 
+      - name: Dump failure error-context (ARIA snapshot) to the log
+        if: failure()
+        run: |
+          for f in $(find test-results -name 'error-context.md' 2>/dev/null); do
+            echo "===== $f ====="
+            cat "$f"
+            echo
+          done
+
       - name: Upload HTML report
         if: always()
         uses: actions/upload-artifact@v4
