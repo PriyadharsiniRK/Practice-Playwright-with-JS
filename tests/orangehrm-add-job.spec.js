@@ -37,12 +37,15 @@ test.describe('OrangeHRM - Login and Add Job Title (TC04)', () => {
 
     for (const row of jobRows) {
       await test.step(`Click on Jobs and click on +Add button (${row.TestCaseId})`, async () => {
-        // The Admin sub-nav tabs aren't reliably exposed with role="link" with
-        // an exact accessible name across OrangeHRM versions, so match on
-        // visible text instead of assuming a specific tag/role.
+        // "Job" isn't a direct link to a page - it's a nav item that opens a
+        // submenu (Job Titles, Pay Grades, Employment Status, ...). Open it,
+        // then click "Job Titles" to actually navigate.
         const jobTab = page.getByText('Job', { exact: true }).first();
         await jobTab.waitFor({ state: 'visible' });
         await jobTab.click();
+        const jobTitlesMenuItem = page.getByRole('menuitem', { name: 'Job Titles' });
+        await jobTitlesMenuItem.waitFor({ state: 'visible' });
+        await jobTitlesMenuItem.click();
         await page.waitForURL(/viewJobTitleList/);
         await page.getByRole('button', { name: 'Add' }).click();
         await page.waitForURL(/saveJobTitle/);

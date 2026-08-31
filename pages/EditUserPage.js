@@ -25,7 +25,13 @@ class EditUserPage {
     // Employee Name: same "type to search, then pick a suggestion" box as
     // on the Add User form.
     this.employeeNameBox = page.locator('.oxd-autocomplete-text-input input');
-    this.employeeSuggestions = page.locator('.oxd-autocomplete-option');
+    // Exclude the "No Records Found" placeholder option - it renders with
+    // the same class as real suggestions, so without this filter, clicking
+    // employeeSuggestions.first() when there are no real matches clicks
+    // that placeholder instead, leaving the field text-filled but Invalid.
+    this.employeeSuggestions = page
+      .locator('.oxd-autocomplete-option')
+      .filter({ hasNotText: 'No Records Found' });
 
     // Username: already filled in with the current value, but still a
     // normal editable box.
@@ -67,21 +73,28 @@ class EditUserPage {
   // suggestion list.
   //
   // Same shared-demo caveat as AddUserPage.selectEmployeeName(): the exact
-  // name in our test data may not be a real employee anymore, so this falls
-  // back to the first word of the name and picks whichever real employee
-  // comes up first.
+  // name in our test data may not be a real employee anymore. Tries the
+  // exact name, then just its first word, then a single common letter
+  // that's virtually certain to match some real employee on the demo -
+  // only clicking once real suggestions (not the "No Records Found"
+  // placeholder) are actually present, so the form never ends up with an
+  // Invalid, unselected Employee Name.
   async selectEmployeeName(employeeName) {
-    await this.employeeNameBox.fill(employeeName);
-    await this.page.waitForTimeout(1500);
+    const candidates = [employeeName, employeeName.trim().split(' ')[0], 'a'];
 
-    const noResults = this.page.locator('.oxd-autocomplete-option', { hasText: 'No Records Found' });
-    if (await noResults.count() > 0) {
-      const firstWord = employeeName.trim().split(' ')[0];
-      await this.employeeNameBox.fill(firstWord);
+    for (const query of candidates) {
+      await this.employeeNameBox.fill(query);
       await this.page.waitForTimeout(1500);
+
+      if (await this.employeeSuggestions.count() > 0) {
+        await this.employeeSuggestions.first().click();
+        return;
+      }
     }
 
-    await this.employeeSuggestions.first().click();
+    throw new Error(
+      `No real employee suggestions found for any of: ${candidates.join(', ')}`
+    );
   }
 
   // Clear the Username box and type a new value.

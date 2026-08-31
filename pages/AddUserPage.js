@@ -22,7 +22,13 @@ class AddUserPage {
     // The Employee Name box: type into it, then pick a name from the list
     // of matching employees that pops up underneath.
     this.employeeNameBox = page.locator('.oxd-autocomplete-text-input input');
-    this.employeeSuggestions = page.locator('.oxd-autocomplete-option');
+    // Exclude the "No Records Found" placeholder option - it renders with
+    // the same class as real suggestions, so without this filter, clicking
+    // employeeSuggestions.first() when there are no real matches clicks
+    // that placeholder instead, leaving the field text-filled but Invalid.
+    this.employeeSuggestions = page
+      .locator('.oxd-autocomplete-option')
+      .filter({ hasNotText: 'No Records Found' });
 
     // Username: same trick as the System Users search page — find the small
     // box that wraps just the "Username" label and its own input field.
@@ -61,22 +67,27 @@ class AddUserPage {
   //
   // Important: this OrangeHRM site is a public demo that many people share,
   // so the exact employee name in our test data might not exist anymore by
-  // the time this test runs. If that happens, this method falls back to
-  // searching with just the first word of the name and picking whichever
-  // real employee comes up first, so the test can still finish the "Add
-  // User" flow instead of getting stuck with "No Records Found".
+  // the time this test runs. This tries the exact name, then just its first
+  // word, then a single common letter that's virtually certain to match
+  // some real employee on the demo - only clicking once real suggestions
+  // (not the "No Records Found" placeholder) are actually present, so the
+  // test never finishes with an Invalid, unselected Employee Name.
   async selectEmployeeName(employeeName) {
-    await this.employeeNameBox.fill(employeeName);
-    await this.page.waitForTimeout(1500); // let the search finish
+    const candidates = [employeeName, employeeName.trim().split(' ')[0], 'a'];
 
-    const noResults = this.page.locator('.oxd-autocomplete-option', { hasText: 'No Records Found' });
-    if (await noResults.count() > 0) {
-      const firstWord = employeeName.trim().split(' ')[0];
-      await this.employeeNameBox.fill(firstWord);
-      await this.page.waitForTimeout(1500);
+    for (const query of candidates) {
+      await this.employeeNameBox.fill(query);
+      await this.page.waitForTimeout(1500); // let the search finish
+
+      if (await this.employeeSuggestions.count() > 0) {
+        await this.employeeSuggestions.first().click();
+        return;
+      }
     }
 
-    await this.employeeSuggestions.first().click();
+    throw new Error(
+      `No real employee suggestions found for any of: ${candidates.join(', ')}`
+    );
   }
 
   // Type the username.
