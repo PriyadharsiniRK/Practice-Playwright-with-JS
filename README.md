@@ -13,6 +13,97 @@ Automated from the manual test case `Youtube_Test.docx`:
 
 Spec file: [`tests/youtube-search.spec.js`](tests/youtube-search.spec.js)
 
+## Test: OrangeHRM login and Admin > System Users search (TC01, Page Object Model)
+
+Automated from the manual test case `OrangeHRM_LoginSearch_TC01.docx`, using data
+from `OrangeHRM_TestDataJSON.docx`:
+
+1. Hit the URL `https://opensource-demo.orangehrmlive.com/web/index.php/auth/login`.
+2. Log in using the username/password from `testdata/OrangeHRM_TestData.json`.
+3. Land on the Dashboard page.
+4. Navigate to Admin, search System Users by username, and verify the result.
+
+This one uses the Page Object Model: page objects live in [`pages/`](pages)
+(`LoginPage.js`, `DashboardPage.js`, `AdminUserPage.js`), test data lives in
+[`testdata/OrangeHRM_TestData.json`](testdata/OrangeHRM_TestData.json), and the
+spec file is [`tests/orangehrm-admin-search.spec.js`](tests/orangehrm-admin-search.spec.js).
+
+> Note: this runs against OrangeHRM's shared public demo instance, so the
+> Employee Name linked to the Admin account and the total user count can
+> change between runs (other people use the same demo). The test only
+> asserts on the stable fields — Username and Status.
+
+## Test: OrangeHRM add a new system user (TC02, Page Object Model)
+
+Automated from the manual test case `OrangeHRM_LoginAddUser_TC02.docx`, using data
+from `OrangeHRM_TestDataJSON.docx`:
+
+1. Hit the URL `https://opensource-demo.orangehrmlive.com/web/index.php/auth/login`.
+2. Log in using the username/password from `testdata/OrangeHRM_TestData.json`.
+3. Land on the Dashboard page.
+4. Navigate to Admin, then click the `+ Add` button.
+5. Fill in the Add User form (User Role, Employee Name, Status, Username,
+   Password, Confirm Password) and click Save.
+
+This reuses `LoginPage.js`, `DashboardPage.js`, and `AdminUserPage.js` (which
+also has a `clickAdd()` method for the `+ Add` button), and adds a new
+page object, [`pages/AddUserPage.js`](pages/AddUserPage.js). Test data lives
+in the same [`testdata/OrangeHRM_TestData.json`](testdata/OrangeHRM_TestData.json)
+file, under the `addUser` section. Spec file:
+[`tests/orangehrm-add-user.spec.js`](tests/orangehrm-add-user.spec.js).
+
+> Notes on the shared public demo instance:
+> - **Username**: the test appends the current time to the username from the
+>   test data, so it's always a brand-new username. Otherwise, re-running the
+>   test would fail with "already exists" the second time, since usernames
+>   created on this shared demo are never deleted automatically.
+> - **Employee Name**: the Employee Name in the test data (`AdminUser080902
+>   Tester`) is a made-up example name. On a shared public demo, a specific
+>   made-up employee usually won't exist as a real employee record.
+>   `AddUserPage.selectEmployeeName()` tries that exact name first, and if
+>   OrangeHRM says "No Records Found", it automatically falls back to
+>   picking whichever real employee comes up first — so the test can still
+>   finish the flow. Because of this, the test does not assert on which
+>   Employee Name ended up on the saved user, only on Username, User Role,
+>   and Status.
+
+## Test: OrangeHRM search and edit a system user (TC03, Page Object Model)
+
+Automated from the manual test case `OrangeHRM_LoginEditUser_TC03.docx`, using data
+from `OrangeHRM_TestDataJSON.docx`:
+
+1. Log in to OrangeHRM.
+2. Land on the Dashboard page.
+3. Navigate to the Admin site.
+4. Search for a user.
+5. Click the edit (pencil) icon to edit that user's details.
+6. Update the values on the Edit screen and click Save.
+
+This reuses `LoginPage.js`, `DashboardPage.js`, `AdminUserPage.js` (which now
+also has `clickEditFirstRow()`), and `AddUserPage.js`, plus a new page object,
+[`pages/EditUserPage.js`](pages/EditUserPage.js), for the Edit User form
+(same as Add User, but Username is already filled in and there's a
+"Change Password ?" checkbox that reveals Password/Confirm Password). Test
+data lives in the same
+[`testdata/OrangeHRM_TestData.json`](testdata/OrangeHRM_TestData.json) file,
+under the `editUser` section. Spec file:
+[`tests/orangehrm-edit-user.spec.js`](tests/orangehrm-edit-user.spec.js).
+
+> **Why this test doesn't edit the built-in "Admin" user:** the manual
+> testcase demonstrates editing OrangeHRM's real "Admin" account — renaming
+> its username and changing its password. Since this runs against the
+> shared public demo, doing that for real would break the standard
+> Admin/admin123 login for everyone else using the same demo (including our
+> own other tests). So this test creates its own disposable user first (a
+> setup step, not part of the manual testcase), then searches for and edits
+> **that** user instead — exercising the exact same search → edit → update
+> → save flow, just on a safe, throwaway target.
+>
+> Same shared-demo caveats as the Add User test apply here too: the
+> username gets a unique time-based suffix, and the Employee Name update
+> picks a real employee rather than typing made-up text (the Employee Name
+> box only accepts a name selected from its suggestion list).
+
 ## Test: OrangeHRM - Login and Add Job Title (TC04)
 
 Automated from the manual test case `OrangeHRM_LoginAddJob_TC04.docx`:
@@ -41,15 +132,16 @@ npm install
 npx playwright install chromium   # first time only, downloads the browser
 ```
 
-## Run the test
+## Run the tests
 
 ```bash
-npm test              # headless run
-npm run test:headed   # watch it run in a visible browser
+npm test                                        # headless run, all specs
+npm run test:headed                              # watch it run in a visible browser
+npx playwright test tests/orangehrm-add-user.spec.js   # run just one spec
 ```
 
-Each run records a screenshot, a video, and (on retry) a trace for the test,
-plus step screenshots attached at each of the four manual steps above.
+Each run records a screenshot, a video, and (on retry) a trace for every
+test, plus step screenshots attached at each manual test step.
 
 ## View the HTML report (with screenshots & video)
 
@@ -57,8 +149,8 @@ plus step screenshots attached at each of the four manual steps above.
 npm run report
 ```
 
-This opens `playwright-report/index.html`. Open the test to see:
-- the 4 test steps,
+This opens `playwright-report/index.html`. Open any test to see:
+- its test steps,
 - attached screenshots for each step,
 - the full-run video recording,
 - the trace (on retry), viewable with the built-in trace viewer.
