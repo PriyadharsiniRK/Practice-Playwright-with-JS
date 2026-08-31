@@ -52,6 +52,13 @@ test.describe('OrangeHRM - Login and Add Job Title (TC04)', () => {
       });
 
       await test.step(`Add Job Title and enter values & save (${row.TestCaseId})`, async () => {
+        // This site is a public demo that many people (and other runs of
+        // this same test) share, so the exact job title from our test data
+        // may already exist - OrangeHRM rejects a duplicate Job Title with
+        // an inline "Already exists" validation error instead of saving.
+        // Append the current time to keep it unique on every run.
+        const uniqueJobTitle = `${row.JobTitle} ${Date.now()}`;
+
         // Neither field has a "name" attribute on the live form - the Job
         // Title input isn't labelled at all in the accessibility tree, so
         // find it the same way the other page objects find unlabelled
@@ -59,7 +66,7 @@ test.describe('OrangeHRM - Login and Add Job Title (TC04)', () => {
         const jobTitleBox = page
           .locator('.oxd-input-group', { hasText: 'Job Title' })
           .locator('input');
-        await jobTitleBox.fill(row.JobTitle);
+        await jobTitleBox.fill(uniqueJobTitle);
         await page.getByPlaceholder('Type description here').fill(row.JobDescription);
 
         await testInfo.attach(`${row.TestCaseId}-before-save`, {
@@ -71,7 +78,7 @@ test.describe('OrangeHRM - Login and Add Job Title (TC04)', () => {
 
         await expect(page.getByText('Successfully Saved')).toBeVisible();
         await page.waitForURL(/viewJobTitleList/);
-        await expect(page.getByText(row.JobTitle, { exact: true }).first()).toBeVisible();
+        await expect(page.getByText(uniqueJobTitle, { exact: true }).first()).toBeVisible();
 
         await testInfo.attach(`${row.TestCaseId}-after-save`, {
           body: await page.screenshot(),

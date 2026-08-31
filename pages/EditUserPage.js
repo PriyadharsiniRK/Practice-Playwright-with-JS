@@ -6,6 +6,8 @@
 // "Change Password ?" checkbox that reveals the Password / Confirm Password
 // boxes only once it's ticked.
 
+const { expect } = require('@playwright/test');
+
 class EditUserPage {
   constructor(page) {
     this.page = page;
@@ -74,26 +76,37 @@ class EditUserPage {
   //
   // Same shared-demo caveat as AddUserPage.selectEmployeeName(): the exact
   // name in our test data may not be a real employee anymore. Tries the
-  // exact name, then just its first word, then a single common letter
-  // that's virtually certain to match some real employee on the demo -
-  // only clicking once real suggestions (not the "No Records Found"
-  // placeholder) are actually present, so the form never ends up with an
-  // Invalid, unselected Employee Name.
+  // exact name, then just its first word, then a couple of single common
+  // letters that are virtually certain to match some real employee.
+  //
+  // Clicking a suggestion doesn't always register (the autocomplete's async
+  // filtering can race the click), leaving the box showing our typed text
+  // as an Invalid, unselected value. So after each click this verifies the
+  // box actually now holds the clicked suggestion's text before accepting
+  // it, and moves on to the next candidate query otherwise.
   async selectEmployeeName(employeeName) {
-    const candidates = [employeeName, employeeName.trim().split(' ')[0], 'a'];
+    const candidates = [employeeName, employeeName.trim().split(' ')[0], 'a', 'e', 'o'];
 
     for (const query of candidates) {
       await this.employeeNameBox.fill(query);
       await this.page.waitForTimeout(1500);
 
-      if (await this.employeeSuggestions.count() > 0) {
-        await this.employeeSuggestions.first().click();
+      if ((await this.employeeSuggestions.count()) === 0) continue;
+
+      const picked = (await this.employeeSuggestions.first().innerText()).trim();
+      await this.employeeSuggestions.first().click();
+
+      try {
+        await expect(this.employeeNameBox).toHaveValue(picked, { timeout: 3000 });
         return;
+      } catch {
+        // The click didn't actually register a selection - try the next
+        // candidate query instead of leaving the field Invalid.
       }
     }
 
     throw new Error(
-      `No real employee suggestions found for any of: ${candidates.join(', ')}`
+      `No real employee selection could be confirmed for any of: ${candidates.join(', ')}`
     );
   }
 
