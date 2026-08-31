@@ -6,6 +6,35 @@ const { readExcelData } = require('../utils/excelReader');
 const TESTDATA_FILE = path.join(__dirname, '..', 'testdata', 'AddJobTitle.xlsx');
 const ORANGEHRM_URL = 'https://opensource-demo.orangehrmlive.com/web/index.php/auth/login';
 
+// "Job" isn't a direct link to a page - it's a nav item that reveals a
+// submenu (Job Titles, Pay Grades, Employment Status, ...). Neither a plain
+// click nor a plain hover opens it reliably every time: a click can toggle
+// an already-open menu closed when the Job section is already active (2nd+
+// row of this loop), and headless-browser hover simulation doesn't always
+// trigger the same listeners a real mouse would. So this alternates both
+// interactions, retrying until the "Job Titles" item actually shows up.
+async function openJobTitlesMenu(page) {
+  const jobTab = page.getByText('Job', { exact: true }).first();
+  const jobTitlesMenuItem = page.getByRole('menuitem', { name: 'Job Titles' });
+
+  for (let attempt = 0; attempt < 6; attempt++) {
+    await jobTab.waitFor({ state: 'visible' });
+    if (attempt % 2 === 0) {
+      await jobTab.hover();
+    } else {
+      await jobTab.click();
+    }
+
+    const opened = await jobTitlesMenuItem
+      .waitFor({ state: 'visible', timeout: 4000 })
+      .then(() => true)
+      .catch(() => false);
+    if (opened) return jobTitlesMenuItem;
+  }
+
+  throw new Error('Could not open the Job > Job Titles submenu after multiple attempts');
+}
+
 /**
  * TC04 - Login to OrangeHRM, navigate to Admin > Job, and add a new Job Title.
  * Test data (job title / description) is read from testdata/AddJobTitle.xlsx
@@ -37,18 +66,7 @@ test.describe('OrangeHRM - Login and Add Job Title (TC04)', () => {
 
     for (const row of jobRows) {
       await test.step(`Click on Jobs and click on +Add button (${row.TestCaseId})`, async () => {
-        // "Job" isn't a direct link to a page - it's a nav item that reveals
-        // a submenu (Job Titles, Pay Grades, Employment Status, ...) on
-        // hover. Using .click() here is unreliable across iterations of
-        // this loop: on the 2nd+ row, the Job section is already active
-        // (we're sitting on its own Job Titles list page), and a repeated
-        // click can toggle an already-open menu closed instead of opening
-        // it. Hovering doesn't have that toggle ambiguity.
-        const jobTab = page.getByText('Job', { exact: true }).first();
-        await jobTab.waitFor({ state: 'visible' });
-        await jobTab.hover();
-        const jobTitlesMenuItem = page.getByRole('menuitem', { name: 'Job Titles' });
-        await jobTitlesMenuItem.waitFor({ state: 'visible' });
+        const jobTitlesMenuItem = await openJobTitlesMenu(page);
         await jobTitlesMenuItem.click();
         await page.waitForURL(/viewJobTitleList/);
         await page.getByRole('button', { name: 'Add' }).click();
