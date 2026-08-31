@@ -70,11 +70,18 @@ test.describe('OrangeHRM - Login and Add Job Title (TC04)', () => {
       await expect(page).toHaveURL(/admin/);
     });
 
+    await test.step('Click on Jobs', async () => {
+      // Navigate through the "Job" > "Job Titles" submenu only once. After
+      // saving each row we land back on this exact Job Titles list page
+      // (see the Save step below), so there's no need to - and, on this
+      // live app, no reliable way to - re-open the submenu for every row.
+      const jobTitlesMenuItem = await openJobTitlesMenu(page);
+      await jobTitlesMenuItem.click();
+      await page.waitForURL(/viewJobTitleList/);
+    });
+
     for (const row of jobRows) {
-      await test.step(`Click on Jobs and click on +Add button (${row.TestCaseId})`, async () => {
-        const jobTitlesMenuItem = await openJobTitlesMenu(page);
-        await jobTitlesMenuItem.click();
-        await page.waitForURL(/viewJobTitleList/);
+      await test.step(`Click on +Add button (${row.TestCaseId})`, async () => {
         await page.getByRole('button', { name: 'Add' }).click();
         await page.waitForURL(/saveJobTitle/);
       });
