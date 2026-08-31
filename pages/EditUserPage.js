@@ -104,8 +104,14 @@ class EditUserPage {
 
   // Tick "Change Password ?" and type the same new password into both the
   // Password and Confirm Password boxes.
+  //
+  // This is a custom-styled checkbox: the real <input type="checkbox"> is
+  // visually replaced by an icon overlay that intercepts pointer events, so
+  // a normal .check() click retries forever against that overlay and hits
+  // the test timeout. force:true skips the actionability/interception
+  // check and dispatches the click directly on the input.
   async changePassword(newPassword) {
-    await this.changePasswordCheckbox.check();
+    await this.changePasswordCheckbox.check({ force: true });
     await this.passwordBox.fill(newPassword);
     await this.confirmPasswordBox.fill(newPassword);
   }

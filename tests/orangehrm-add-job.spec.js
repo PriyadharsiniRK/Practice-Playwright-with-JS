@@ -52,8 +52,15 @@ test.describe('OrangeHRM - Login and Add Job Title (TC04)', () => {
       });
 
       await test.step(`Add Job Title and enter values & save (${row.TestCaseId})`, async () => {
-        await page.locator('input[name="jobTitle"]').fill(row.JobTitle);
-        await page.locator('textarea[name="jobDescription"]').fill(row.JobDescription);
+        // Neither field has a "name" attribute on the live form - the Job
+        // Title input isn't labelled at all in the accessibility tree, so
+        // find it the same way the other page objects find unlabelled
+        // inputs: the .oxd-input-group that wraps its own label text.
+        const jobTitleBox = page
+          .locator('.oxd-input-group', { hasText: 'Job Title' })
+          .locator('input');
+        await jobTitleBox.fill(row.JobTitle);
+        await page.getByPlaceholder('Type description here').fill(row.JobDescription);
 
         await testInfo.attach(`${row.TestCaseId}-before-save`, {
           body: await page.screenshot(),
