@@ -1,6 +1,8 @@
 // This file describes the "Admin > System Users" page — the search form
 // and the results table.
 
+const { expect } = require('@playwright/test');
+
 class AdminUserPage {
   constructor(page) {
     this.page = page;
@@ -90,7 +92,13 @@ class AdminUserPage {
   // by their position in the list.
   async getFirstRowData() {
     const firstRow = this.resultRows.first();
-    const allCells = await firstRow.locator('.oxd-table-cell').allTextContents();
+    const cells = firstRow.locator('.oxd-table-cell');
+
+    // A row can briefly exist in the DOM (making getRowCount() > 0) before
+    // its cells have all rendered, which would otherwise read back
+    // incomplete data. Wait for all 6 to be there before reading.
+    await expect(cells).toHaveCount(6, { timeout: 5000 });
+    const allCells = await cells.allTextContents();
 
     return {
       username: allCells[1],
