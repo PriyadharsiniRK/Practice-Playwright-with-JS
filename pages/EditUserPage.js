@@ -105,12 +105,17 @@ class EditUserPage {
       }
       if (count === 0) continue;
 
-      const picked = (await this.employeeSuggestions.first().innerText()).trim();
       await this.employeeSuggestions.first().click();
 
+      // Verify the click actually replaced our typed query with a picked
+      // value, rather than comparing against the option's raw innerText -
+      // OrangeHRM's suggestion rows don't always render as exactly the
+      // string that ends up in the input (e.g. extra whitespace), which
+      // made an exact-match check reject real, successful selections.
       try {
-        await expect(this.employeeNameBox).toHaveValue(picked, { timeout: 3000 });
-        return;
+        await expect(this.employeeNameBox).not.toHaveValue(query, { timeout: 3000 });
+        const finalValue = (await this.employeeNameBox.inputValue()).trim();
+        if (finalValue.length > 0) return;
       } catch {
         // The click didn't actually register a selection - try the next
         // candidate query instead of leaving the field Invalid.
