@@ -118,14 +118,26 @@ test('OrangeHRM: search for a user, edit it, and save', async ({ page }, testInf
 
   await test.step('Verify: search for the edited username and check the row', async () => {
     await adminUserPage.waitUntilLoaded();
-    await adminUserPage.searchByUsername(editedUsername);
+
+    // The shared demo's user search can lag behind a just-saved edit by a
+    // few seconds (its results look backed by a search index rather than a
+    // live table read, unlike Add User's flow which needs no search step).
+    // Retry the search itself - not just re-reading the DOM - a handful of
+    // times before giving up, so a few seconds of indexing lag doesn't fail
+    // the test outright.
+    let rowCount = 0;
+    for (let attempt = 0; attempt < 6; attempt++) {
+      await adminUserPage.searchByUsername(editedUsername);
+      rowCount = await adminUserPage.getRowCount();
+      if (rowCount > 0) break;
+      await page.waitForTimeout(3000);
+    }
 
     await testInfo.attach('step7-verify-updated-user', {
       body: await page.screenshot(),
       contentType: 'image/png',
     });
 
-    const rowCount = await adminUserPage.getRowCount();
     expect(rowCount).toBeGreaterThan(0);
 
     const firstRow = await adminUserPage.getFirstRowData();
