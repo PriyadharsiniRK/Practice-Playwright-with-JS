@@ -6,6 +6,8 @@
 // Registration Number, Tax ID, address, Notes, etc). See the big comment in
 // the spec file for why that matters on a shared public demo.
 
+const { expect } = require('@playwright/test');
+
 class GeneralInformationPage {
   constructor(page) {
     this.page = page;
@@ -69,8 +71,23 @@ class GeneralInformationPage {
   }
 
   // Flip the "Edit" switch on, so the fields become editable.
+  //
+  // This custom-styled switch (like the "Change Password ?" checkbox on the
+  // Edit User form) doesn't always register a plain click - CI logs showed
+  // the Registration Number box still `disabled` 15s after clicking it. So
+  // this verifies the fields actually became enabled, retrying with
+  // force:true if a normal click didn't take.
   async clickEdit() {
-    await this.editToggle.click();
+    for (let attempt = 0; attempt < 5; attempt++) {
+      await this.editToggle.click({ force: attempt > 0 });
+
+      const enabled = await this.registrationNumberBox.isEnabled().catch(() => false);
+      if (enabled) return;
+
+      await this.page.waitForTimeout(500);
+    }
+
+    throw new Error('Clicking the Edit switch did not make the General Information fields editable');
   }
 
   // Fill in the 3 editable fields this test uses. Call clickEdit() first.
@@ -80,9 +97,13 @@ class GeneralInformationPage {
     await this.notesBox.fill(notes);
   }
 
-  // Click the Save button.
+  // Click the Save button and wait for the confirmation toast, so a save
+  // that silently fails (e.g. a validation error elsewhere on this shared,
+  // much-modified form) surfaces here as a clear timeout instead of a
+  // confusing value mismatch later in the test.
   async save() {
     await this.saveButton.click();
+    await expect(this.page.getByText(/Successfully (Saved|Updated)/)).toBeVisible();
   }
 }
 
