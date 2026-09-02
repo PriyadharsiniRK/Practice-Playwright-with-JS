@@ -44,6 +44,10 @@ jobs:
             echo
           done
 
+      - name: Generate TC04 manual-vs-automated comparison report
+        if: always()
+        run: npm run report:compare:tc04
+
       - name: Upload HTML report
         if: always()
         uses: actions/upload-artifact@v4

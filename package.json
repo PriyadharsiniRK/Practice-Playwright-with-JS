@@ -6,7 +6,8 @@
   "scripts": {
     "test": "playwright test",
     "test:headed": "playwright test --headed",
-    "report": "playwright show-report"
+    "report": "playwright show-report",
+    "report:compare:tc04": "node scripts/generate-comparison-report.js"
   },
   "license": "ISC",
   "devDependencies": {

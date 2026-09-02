@@ -1,10 +1,18 @@
 // @ts-check
+const fs = require('fs');
 const path = require('path');
 const { test, expect } = require('@playwright/test');
 const { readExcelData } = require('../utils/excelReader');
 
 const TESTDATA_FILE = path.join(__dirname, '..', 'testdata', 'AddJobTitle.xlsx');
 const ORANGEHRM_URL = 'https://opensource-demo.orangehrmlive.com/web/index.php/auth/login';
+
+// Fixed-path screenshots, one per manual-testcase step, named to line up
+// 1:1 with manual-screenshots/TC04/ so scripts/generate-comparison-report.js
+// can pair them without guessing Playwright's internal attachment names.
+const AUTO_SHOTS_DIR = path.join(__dirname, '..', 'automation-screenshots', 'TC04');
+fs.mkdirSync(AUTO_SHOTS_DIR, { recursive: true });
+const shotPath = (name) => path.join(AUTO_SHOTS_DIR, name);
 
 // "Job" isn't a direct link to a page - it's a nav item that reveals a
 // submenu (Job Titles, Pay Grades, Employment Status, ...). Neither a plain
@@ -57,17 +65,20 @@ test.describe('OrangeHRM - Login and Add Job Title (TC04)', () => {
       await page.goto(ORANGEHRM_URL);
       await page.locator('input[name="username"]').fill('Admin');
       await page.locator('input[name="password"]').fill('admin123');
+      await page.screenshot({ path: shotPath('step1-login.png') });
       await page.getByRole('button', { name: 'Login' }).click();
     });
 
     await test.step('Landed to dashboard', async () => {
       await expect(page).toHaveURL(/dashboard/);
       await expect(page.getByText('Dashboard', { exact: true }).first()).toBeVisible();
+      await page.screenshot({ path: shotPath('step2-dashboard.png') });
     });
 
     await test.step('Navigate to Admin site', async () => {
       await page.getByRole('link', { name: 'Admin' }).click();
       await expect(page).toHaveURL(/admin/);
+      await page.screenshot({ path: shotPath('step3-admin.png') });
     });
 
     await test.step('Click on Jobs', async () => {
@@ -78,8 +89,10 @@ test.describe('OrangeHRM - Login and Add Job Title (TC04)', () => {
       const jobTitlesMenuItem = await openJobTitlesMenu(page);
       await jobTitlesMenuItem.click();
       await page.waitForURL(/viewJobTitleList/);
+      await page.screenshot({ path: shotPath('step4-job-titles-list.png') });
     });
 
+    let firstRow = true;
     for (const row of jobRows) {
       await test.step(`Click on +Add button (${row.TestCaseId})`, async () => {
         await page.getByRole('button', { name: 'Add' }).click();
@@ -108,6 +121,9 @@ test.describe('OrangeHRM - Login and Add Job Title (TC04)', () => {
           body: await page.screenshot(),
           contentType: 'image/png',
         });
+        if (firstRow) {
+          await page.screenshot({ path: shotPath('step5-add-job-title-form.png') });
+        }
 
         await page.getByRole('button', { name: 'Save' }).click();
 
@@ -120,6 +136,7 @@ test.describe('OrangeHRM - Login and Add Job Title (TC04)', () => {
           contentType: 'image/png',
         });
       });
+      firstRow = false;
     }
   });
 });
