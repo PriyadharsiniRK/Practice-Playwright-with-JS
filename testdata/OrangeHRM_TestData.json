@@ -1,0 +1,27 @@
+[
+  {
+    "username": "Admin",
+    "password": "admin123",
+    "adminSearch": {
+      "username": "Admin",
+      "expectedStatus": "Enabled"
+    },
+    "addUser": {
+      "userRole": "Admin",
+      "employeeName": "AdminUser080902 Tester",
+      "username": "AdminUser080902Tester1",
+      "password": "Test@123",
+      "status": "Enabled"
+    },
+    "editUser": {
+      "setupUsername": "TC03SetupUser",
+      "usernameSuffix": "Edited",
+      "newPassword": "Edited@123"
+    },
+    "generalInfo": {
+      "registrationNumberPrefix": "TC05-",
+      "taxIdPrefix": "TC05TAX-",
+      "notes": "HRM Software (updated by TC05 automated test)"
+    }
+  }
+]
