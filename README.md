@@ -125,6 +125,39 @@ in `testdata/AddJobTitle.xlsx` and runs the same steps once per row.
 To add more test cases, just add more rows to the Excel sheet — no code
 changes needed. Columns: `TestCaseId`, `JobTitle`, `JobDescription`.
 
+## Test: OrangeHRM update General Information (TC05, Page Object Model)
+
+Automated from the manual test case for updating Admin > Organization >
+General Information:
+
+1. Log in to OrangeHRM.
+2. Land on the Dashboard page.
+3. Navigate to the Admin site.
+4. Click **Organization**, then click **General Information**.
+5. Click the Edit icon.
+6. Update values and click Save.
+
+Reuses `LoginPage.js` and `DashboardPage.js`, plus a new page object,
+[`pages/GeneralInformationPage.js`](pages/GeneralInformationPage.js), for the
+General Information form (an Edit toggle switch instead of a separate Edit
+User page). Test data lives in the same
+[`testdata/OrangeHRM_TestData.json`](testdata/OrangeHRM_TestData.json) file,
+under the `generalInfo` section. Spec file:
+[`tests/orangehrm-update-general-info.spec.js`](tests/orangehrm-update-general-info.spec.js).
+
+> **Why this test restores the values it changes:** unlike Add User or Add
+> Job Title, "General Information" isn't a list you can add a throwaway row
+> to — it's a single global settings record (Organization Name, Registration
+> Number, Tax ID, address, Notes...) shared by everyone using the demo, with
+> no disposable stand-in to edit instead. So this test reads the current
+> values of the fields it's about to touch **before** changing anything (a
+> setup step, not part of the manual testcase), updates just those fields and
+> saves — exercising the exact "click Edit, update values, click Save" flow
+> the testcase describes — then restores the original values it read and
+> saves again (a cleanup step), leaving the shared demo the way it was found.
+> Only 3 low-risk fields are touched (Registration Number, Tax ID, Notes),
+> not Organization Name, Phone, Email, or Address.
+
 ## Setup
 
 ```bash

@@ -17,6 +17,11 @@
       "setupUsername": "TC03SetupUser",
       "usernameSuffix": "Edited",
       "newPassword": "Edited@123"
+    },
+    "generalInfo": {
+      "registrationNumberPrefix": "TC05-",
+      "taxIdPrefix": "TC05TAX-",
+      "notes": "HRM Software (updated by TC05 automated test)"
     }
   }
 ]
