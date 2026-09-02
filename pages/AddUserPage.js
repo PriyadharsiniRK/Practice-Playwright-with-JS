@@ -24,13 +24,15 @@ class AddUserPage {
     // The Employee Name box: type into it, then pick a name from the list
     // of matching employees that pops up underneath.
     this.employeeNameBox = page.locator('.oxd-autocomplete-text-input input');
-    // Exclude the "No Records Found" placeholder option - it renders with
-    // the same class as real suggestions, so without this filter, clicking
-    // employeeSuggestions.first() when there are no real matches clicks
-    // that placeholder instead, leaving the field text-filled but Invalid.
+    // Exclude the "No Records Found" AND "Searching...." placeholder rows -
+    // both render with the same class as real suggestions. Without this,
+    // employeeSuggestions.first() can click "Searching...." while its
+    // request is still in flight, which does nothing but leaves the field
+    // holding our typed text as an Invalid, unselected value.
     this.employeeSuggestions = page
       .locator('.oxd-autocomplete-option')
-      .filter({ hasNotText: 'No Records Found' });
+      .filter({ hasNotText: 'No Records Found' })
+      .filter({ hasNotText: 'Searching' });
 
     // Username: same trick as the System Users search page — find the small
     // box that wraps just the "Username" label and its own input field.
@@ -84,9 +86,19 @@ class AddUserPage {
 
     for (const query of candidates) {
       await this.employeeNameBox.fill(query);
-      await this.page.waitForTimeout(1500); // let the search finish
 
-      if ((await this.employeeSuggestions.count()) === 0) continue;
+      // Poll instead of a fixed sleep - the live demo's autocomplete
+      // request can take anywhere from a few hundred ms to several
+      // seconds, and employeeSuggestions already excludes the
+      // "Searching...." placeholder, so a non-zero count here means real
+      // suggestions have actually landed.
+      let count = 0;
+      for (let attempt = 0; attempt < 10; attempt++) {
+        count = await this.employeeSuggestions.count();
+        if (count > 0) break;
+        await this.page.waitForTimeout(500);
+      }
+      if (count === 0) continue;
 
       const picked = (await this.employeeSuggestions.first().innerText()).trim();
       await this.employeeSuggestions.first().click();
