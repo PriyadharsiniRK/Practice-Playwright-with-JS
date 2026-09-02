@@ -110,6 +110,18 @@ test('OrangeHRM: update General Information and save', async ({ page }, testInfo
     await generalInfoPage.save();
   });
 
+  // NOTE on CI flakiness: this shared public demo has shown a multi-minute
+  // read-after-write delay specifically on this General Information record
+  // - clicking Save reliably shows the "Successfully Saved/Updated" toast
+  // (see GeneralInformationPage.save()), but immediately reading the field
+  // back here can still return a value from an earlier CI run rather than
+  // this run's own write. Confirmed by comparing two separate CI runs a few
+  // minutes apart: the "stale" value each run read back was consistently
+  // the value written 1-2 runs earlier, i.e. the writes DO land, just with
+  // a lag well beyond a single test's retry window. This is a live-
+  // infrastructure characteristic of the shared demo, not a bug in this
+  // test or GeneralInformationPage - the same category of limitation as
+  // youtube-search.spec.js's Google CAPTCHA issue (see its own comments).
   await test.step('Verify: the new values were saved', async () => {
     await generalInfoPage.waitUntilLoaded();
     const values = await generalInfoPage.readEditableValues();
