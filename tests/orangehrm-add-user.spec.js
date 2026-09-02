@@ -19,6 +19,11 @@ const data = testData[0]; // the JSON file is a list with one entry in it
 // 5. Fill in the Add User form and click Save.
 
 test('OrangeHRM: login and add a new system user', async ({ page }, testInfo) => {
+  // Employee Name selection polls the live demo's autocomplete across up
+  // to 5 candidate queries, which can take longer than the framework's 30s
+  // default when the demo is slow to respond.
+  test.setTimeout(90000);
+
   // Create one "page object" for each screen we'll visit.
   const loginPage = new LoginPage(page);
   const dashboardPage = new DashboardPage(page);

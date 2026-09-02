@@ -33,6 +33,12 @@ const data = testData[0]; // the JSON file is a list with one entry in it
 // click Save — is exercised exactly as described in the testcase.
 
 test('OrangeHRM: search for a user, edit it, and save', async ({ page }, testInfo) => {
+  // Employee Name selection polls the live demo's autocomplete across up
+  // to 5 candidate queries, and this test does that TWICE (once to set up
+  // the disposable user, once for the actual edit) on top of search and
+  // navigation steps, comfortably longer than the framework's 30s default.
+  test.setTimeout(120000);
+
   // Create one "page object" for each screen we'll visit.
   const loginPage = new LoginPage(page);
   const dashboardPage = new DashboardPage(page);
