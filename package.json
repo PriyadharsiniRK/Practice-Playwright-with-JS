@@ -1,0 +1,40 @@
+{
+  "name": "playwright-test-generator",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI-assisted generator that turns manual test cases written in Excel/Word into executable Playwright tests.",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "parse": "node src/cli.js parse",
+    "analyze": "node src/cli.js analyze",
+    "generate": "node src/cli.js generate",
+    "test": "playwright test",
+    "report": "playwright show-report reports/html",
+    "generate-and-test": "node src/cli.js generate-and-test",
+    "demo": "node src/cli.js generate-and-test --offline",
+    "build:inputs": "node scripts/build-input-files.js",
+    "lint": "node --test \"tests/**/*.test.js\"",
+    "test:unit": "node --test \"tests/**/*.test.js\""
+  },
+  "keywords": [
+    "playwright",
+    "test-automation",
+    "llm",
+    "ai",
+    "test-case-generation"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.123.0",
+    "exceljs": "^4.4.0",
+    "mammoth": "^1.12.2",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.0",
+    "docx": "^9.7.1"
+  }
+}
