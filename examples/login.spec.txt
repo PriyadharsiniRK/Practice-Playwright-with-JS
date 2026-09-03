@@ -1,0 +1,17 @@
+# Example spec for the offline engine. Run:
+#   npm run gen -- --spec examples/login.spec.txt --offline --dry-run
+
+Test: Successful login
+URL: /login
+Tags: @smoke @auth
+Description: A valid user signs in and lands on the dashboard.
+
+Steps:
+- go to /login
+- fill "Email" with "user@example.com"
+- fill "Password" with "correct-horse-battery-staple"
+- check "Remember me"
+- click the "Sign in" button
+- expect url to contain "/dashboard"
+- expect the "Welcome back" heading to be visible
+- expect "Invalid credentials" to be hidden
