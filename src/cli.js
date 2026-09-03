@@ -25,9 +25,13 @@ const DEFAULT_OUTPUT_DIR = 'generated';
 /** Origin used by `--offline`, served by mock/server.js. */
 const OFFLINE_BASE_URL = 'http://127.0.0.1:4173';
 
+const HELP_FLAGS = ['-h', '--help', 'help'];
+
 function parseArgs(argv) {
   const options = {
-    command: argv[0],
+    // `cli.js --help` asks for help, not for a command called "--help".
+    command: HELP_FLAGS.includes(argv[0]) ? undefined : argv[0],
+    help: HELP_FLAGS.includes(argv[0]),
     testCaseId: undefined,
     input: DEFAULT_INPUT,
     outDir: DEFAULT_OUTPUT_DIR,
@@ -179,7 +183,8 @@ async function main() {
   const options = parseArgs(process.argv.slice(2));
   if (!options.command || options.help) {
     console.log(USAGE);
-    return options.command ? 0 : 1;
+    // Asking for help succeeds; being given no command at all does not.
+    return options.help ? 0 : 1;
   }
 
   switch (options.command) {
