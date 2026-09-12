@@ -1,0 +1,24 @@
+{
+  "name": "practice-playwright-with-js",
+  "version": "1.0.0",
+  "description": "Playwright practice repo with an AI-assisted test script generator",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "gen": "node generator/cli.js",
+    "test": "playwright test",
+    "test:unit": "node --test"
+  },
+  "keywords": [
+    "playwright",
+    "test-automation",
+    "codegen"
+  ],
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.75.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1"
+  }
+}

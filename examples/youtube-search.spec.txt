@@ -1,0 +1,12 @@
+Test: TC-YT-001 - Search for a video on YouTube
+URL: https://www.youtube.com
+Tags: @smoke @youtube
+
+Description: A user searches for a video on YouTube using the search functionality.
+
+Steps:
+- go to https://www.youtube.com
+- fill "Search" with "Playwright testing"
+- click the "Search" button
+- expect url to contain "search_query"
+- expect "Playwright testing" to be visible

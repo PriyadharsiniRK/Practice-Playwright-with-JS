@@ -1,0 +1,15 @@
+# Runs against a live demo site, so it works without any setup:
+#   npm run gen -- --spec examples/todomvc.spec.txt --offline
+#   npx playwright test tests/add-a-todo-item.spec.js
+
+Test: Add a todo item
+Tags: @demo
+
+Steps:
+- go to https://demo.playwright.dev/todomvc
+- fill "placeholder:What needs to be done?" with "buy milk"
+- press "Enter" key
+- expect "buy milk" to be visible
+- expect "css:.todo-list li" to have count 1
+- check "css:.todo-list li .toggle"
+- expect "css:.todo-list li.completed" to have count 1
