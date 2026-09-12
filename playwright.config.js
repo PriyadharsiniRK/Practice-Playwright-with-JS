@@ -15,5 +15,15 @@ export default defineConfig({
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [{
+    name: 'chromium',
+    use: {
+      ...devices['Desktop Chrome'],
+      launchArgs: ['--disable-blink-features=AutomationControlled'],
+    },
+  }],
+  webServer: undefined,
 });
+
+process.env.PLAYWRIGHT_BROWSERS_PATH = '/opt/pw-browsers';
+process.env.PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = '1';
