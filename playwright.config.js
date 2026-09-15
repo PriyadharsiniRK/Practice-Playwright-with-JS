@@ -41,7 +41,14 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+        // Use the full Chromium build rather than the separate
+        // chromium-headless-shell download: one artifact to install instead of
+        // two, and a partial `playwright install` can no longer leave the suite
+        // unable to launch.
+        channel: 'chromium',
+      },
     },
   ],
 

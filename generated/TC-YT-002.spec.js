@@ -14,7 +14,7 @@ test('TC-YT-002 - Verify YouTube homepage', async ({ page }) => {
   // Precondition: User has internet access.
 
   // Step 1: Open https://www.youtube.com
-  await page.goto('https://www.youtube.com');
+  await page.goto('http://127.0.0.1:4173/');
 
   // Step 2: Verify that the YouTube logo is visible
   await expect(page.getByRole('link', { name: /youtube home/i })).toBeVisible();

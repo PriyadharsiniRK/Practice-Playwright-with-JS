@@ -205,10 +205,14 @@ npm run demo
 
 > **Use `npm run install:browsers`, not `npx playwright install`.** Playwright
 > pins each release to an exact browser revision, and `npx` resolves whichever
-> Playwright version *it* finds - which may not be this project's. Installing the
-> wrong revision leaves every test failing in milliseconds with
-> `Executable doesn't exist at ...chromium_headless_shell-NNNN...`. The npm script
+> Playwright version *it* finds - which may not be this project's. The npm script
 > always uses the project's own Playwright, so the revisions match.
+>
+> The suite runs the **full Chromium build** (`channel: 'chromium'` in
+> `playwright.config.js`) rather than the separate `chromium-headless-shell`
+> download. That is deliberate: it needs one browser artifact instead of two, so
+> a partial install can no longer leave every test failing in milliseconds with
+> `Executable doesn't exist at ...chromium_headless_shell-NNNN...`.
 
 ---
 

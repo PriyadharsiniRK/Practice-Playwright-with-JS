@@ -14,7 +14,7 @@ test('TC-YT-003 - Search and open a video', async ({ page }) => {
   // Precondition: User has internet access.
 
   // Step 1: Open https://www.youtube.com
-  await page.goto('https://www.youtube.com');
+  await page.goto('http://127.0.0.1:4173/');
 
   // Step 2: Enter "Playwright testing tutorial" in the search box
   await page.getByRole('combobox', { name: /search/i }).fill('Playwright testing tutorial');

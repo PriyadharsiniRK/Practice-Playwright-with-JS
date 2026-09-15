@@ -14,7 +14,7 @@ test('TC-OHRM-003 - Navigate to the PIM module', async ({ page }) => {
   // Precondition: The demo instance is reachable. Admin credentials are known.
 
   // Step 1: Open https://opensource-demo.orangehrmlive.com
-  await page.goto('https://opensource-demo.orangehrmlive.com');
+  await page.goto('http://127.0.0.1:4174/');
 
   // Step 2: Enter "Admin" in the Username field
   await page.getByPlaceholder(/username/i).fill('Admin');

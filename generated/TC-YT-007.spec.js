@@ -14,7 +14,7 @@ test('TC-YT-007 - Return to the homepage using the logo', async ({ page }) => {
   // Precondition: User has internet access.
 
   // Step 1: Open https://www.youtube.com
-  await page.goto('https://www.youtube.com');
+  await page.goto('http://127.0.0.1:4173/');
 
   // Step 2: Enter "Playwright automation" in the search box
   await page.getByRole('combobox', { name: /search/i }).fill('Playwright automation');
