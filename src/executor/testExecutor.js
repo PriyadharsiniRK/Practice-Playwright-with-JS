@@ -9,12 +9,29 @@ import { ErrorCode, PipelineError } from '../errors.js';
 const REPORT_PATH = path.join('reports', 'html', 'index.html');
 
 /**
+ * `playwright test <file>` treats its arguments as regular expressions matched
+ * against test file paths. On Windows path.join() yields backslashes, and a
+ * backslash is a regex escape - "generated\\TC-OHRM-001.spec.js" matches
+ * nothing and the run dies with "No tests found". Forward slashes match on
+ * every platform.
+ */
+const asTestFilter = (specFile) => specFile.split(path.sep).join('/');
+
+/**
+ * npm ships npx as a .cmd shim on Windows, which spawn() will not resolve
+ * without the extension. Naming it explicitly avoids shell:true, which Node
+ * deprecated for argument-bearing spawns (DEP0190) because the arguments are
+ * concatenated rather than escaped.
+ */
+const NPX = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+
+/**
  * @param {string[]} specFiles paths of generated spec files (empty = whole suite)
  * @param {{ offline?: boolean, headed?: boolean, cwd?: string, testDir?: string }} [options]
  * @returns {Promise<{ exitCode: number, reportPath: string }>}
  */
 export function runTests(specFiles = [], options = {}) {
-  const args = ['playwright', 'test', ...specFiles];
+  const args = ['playwright', 'test', ...specFiles.map(asTestFilter)];
   if (options.headed) args.push('--headed');
 
   const env = { ...process.env };
@@ -22,11 +39,10 @@ export function runTests(specFiles = [], options = {}) {
   if (options.testDir) env.GENERATED_DIR = options.testDir;
 
   return new Promise((resolve, reject) => {
-    const child = spawn('npx', args, {
+    const child = spawn(NPX, args, {
       cwd: options.cwd ?? process.cwd(),
       env,
       stdio: 'inherit',
-      shell: process.platform === 'win32',
     });
 
     child.on('error', (error) => {
@@ -43,4 +59,4 @@ export function runTests(specFiles = [], options = {}) {
   });
 }
 
-export { REPORT_PATH };
+export { REPORT_PATH, NPX, asTestFilter };

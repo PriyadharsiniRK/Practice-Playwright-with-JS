@@ -18,7 +18,7 @@ import { analyzeTestCase, createProvider } from './analyzer/testCaseAnalyzer.js'
 import { generateSpec } from './generator/playwrightGenerator.js';
 import { resolveTarget } from './generator/selectorStrategy.js';
 import { DEFAULT_APPLICATION, applicationForTestCase } from './generator/applications/index.js';
-import { REPORT_PATH, runTests } from './executor/testExecutor.js';
+import { NPX, REPORT_PATH, runTests } from './executor/testExecutor.js';
 import { logger } from './util/logger.js';
 
 const DEFAULT_INPUT = path.join('input', 'youtube-tests.xlsx');
@@ -174,9 +174,8 @@ async function showReport() {
     logger.warn(`No report at ${REPORT_PATH}. Run the tests first.`);
     return 1;
   }
-  const child = spawn('npx', ['playwright', 'show-report', path.dirname(REPORT_PATH)], {
+  const child = spawn(NPX, ['playwright', 'show-report', path.dirname(REPORT_PATH)], {
     stdio: 'inherit',
-    shell: process.platform === 'win32',
   });
   return new Promise((resolve) => child.on('close', (code) => resolve(code ?? 0)));
 }
