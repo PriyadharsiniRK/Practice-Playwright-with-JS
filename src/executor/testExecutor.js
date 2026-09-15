@@ -3,6 +3,8 @@
  */
 
 import { spawn } from 'node:child_process';
+import { createRequire } from 'node:module';
+import fs from 'node:fs';
 import path from 'node:path';
 import { ErrorCode, PipelineError } from '../errors.js';
 
@@ -15,15 +17,32 @@ const REPORT_PATH = path.join('reports', 'html', 'index.html');
  * nothing and the run dies with "No tests found". Forward slashes match on
  * every platform.
  */
-const asTestFilter = (specFile) => specFile.split(path.sep).join('/');
+export const asTestFilter = (specFile) => specFile.split(path.sep).join('/');
 
 /**
- * npm ships npx as a .cmd shim on Windows, which spawn() will not resolve
- * without the extension. Naming it explicitly avoids shell:true, which Node
- * deprecated for argument-bearing spawns (DEP0190) because the arguments are
- * concatenated rather than escaped.
+ * Locates Playwright's CLI entry point inside node_modules.
+ *
+ * The obvious `spawn('npx', ...)` is a trap on Windows: npx is a .cmd shim, and
+ * since the fix for CVE-2024-27980 Node refuses to spawn .bat/.cmd without
+ * `shell: true` (EINVAL), while `shell: true` with arguments is itself
+ * deprecated (DEP0190). Running the CLI with the current Node binary sidesteps
+ * both - no shim, no shell, identical behaviour on every platform.
+ *
+ * `cli.js` is not listed in either package's "exports", so resolve the package
+ * entry point and look next to it rather than importing the path directly.
  */
-const NPX = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+export function resolvePlaywrightCli(fromUrl = import.meta.url) {
+  const require = createRequire(fromUrl);
+  for (const pkg of ['playwright', '@playwright/test']) {
+    try {
+      const cli = path.join(path.dirname(require.resolve(pkg)), 'cli.js');
+      if (fs.existsSync(cli)) return cli;
+    } catch {
+      // Try the next package.
+    }
+  }
+  return null;
+}
 
 /**
  * @param {string[]} specFiles paths of generated spec files (empty = whole suite)
@@ -31,7 +50,7 @@ const NPX = process.platform === 'win32' ? 'npx.cmd' : 'npx';
  * @returns {Promise<{ exitCode: number, reportPath: string }>}
  */
 export function runTests(specFiles = [], options = {}) {
-  const args = ['playwright', 'test', ...specFiles.map(asTestFilter)];
+  const args = ['test', ...specFiles.map(asTestFilter)];
   if (options.headed) args.push('--headed');
 
   const env = { ...process.env };
@@ -39,7 +58,17 @@ export function runTests(specFiles = [], options = {}) {
   if (options.testDir) env.GENERATED_DIR = options.testDir;
 
   return new Promise((resolve, reject) => {
-    const child = spawn(NPX, args, {
+    const cli = resolvePlaywrightCli();
+    if (!cli) {
+      reject(
+        new PipelineError(ErrorCode.TEST_EXECUTION_FAILED, 'Could not find the Playwright CLI in node_modules.', {
+          hint: 'Run `npm install` and `npx playwright install chromium` first.',
+        }),
+      );
+      return;
+    }
+
+    const child = spawn(process.execPath, [cli, ...args], {
       cwd: options.cwd ?? process.cwd(),
       env,
       stdio: 'inherit',
@@ -59,4 +88,18 @@ export function runTests(specFiles = [], options = {}) {
   });
 }
 
-export { REPORT_PATH, NPX, asTestFilter };
+/** Opens the HTML report, using the same shim-free invocation as runTests. */
+export function showReport(reportDir) {
+  const cli = resolvePlaywrightCli();
+  if (!cli) {
+    return Promise.reject(
+      new PipelineError(ErrorCode.TEST_EXECUTION_FAILED, 'Could not find the Playwright CLI in node_modules.', {
+        hint: 'Run `npm install` first.',
+      }),
+    );
+  }
+  const child = spawn(process.execPath, [cli, 'show-report', reportDir], { stdio: 'inherit' });
+  return new Promise((resolve) => child.on('close', (code) => resolve(code ?? 0)));
+}
+
+export { REPORT_PATH };

@@ -9,8 +9,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
+import { existsSync } from 'node:fs';
 
-import { NPX, asTestFilter } from '../src/executor/testExecutor.js';
+import { asTestFilter, resolvePlaywrightCli } from '../src/executor/testExecutor.js';
 
 test('spec paths are passed to Playwright with forward slashes', () => {
   // Whatever path.join produced, the filter must never contain a backslash:
@@ -28,6 +29,12 @@ test('a Windows-style path is normalised even when path.sep is /', () => {
   assert.equal('generated\\TC-YT-001.spec.js'.split('\\').join('/'), 'generated/TC-YT-001.spec.js');
 });
 
-test('npx is named with its .cmd extension on Windows', () => {
-  assert.equal(NPX, process.platform === 'win32' ? 'npx.cmd' : 'npx');
+test('the Playwright CLI resolves to a real .js file, not a shell shim', () => {
+  const cli = resolvePlaywrightCli();
+  assert.ok(cli, 'Playwright CLI not found in node_modules');
+  // A .cmd/.bat shim cannot be spawned without a shell on Windows (EINVAL
+  // since CVE-2024-27980), so the runner must invoke a plain .js file with
+  // the current Node binary instead.
+  assert.match(cli, /cli\.js$/);
+  assert.equal(existsSync(cli), true);
 });

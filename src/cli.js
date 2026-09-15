@@ -11,14 +11,13 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { spawn } from 'node:child_process';
 import { PipelineError } from './errors.js';
 import { parseDocument, selectTestCase } from './parser/index.js';
 import { analyzeTestCase, createProvider } from './analyzer/testCaseAnalyzer.js';
 import { generateSpec } from './generator/playwrightGenerator.js';
 import { resolveTarget } from './generator/selectorStrategy.js';
 import { DEFAULT_APPLICATION, applicationForTestCase } from './generator/applications/index.js';
-import { NPX, REPORT_PATH, runTests } from './executor/testExecutor.js';
+import { REPORT_PATH, runTests, showReport as spawnReportServer } from './executor/testExecutor.js';
 import { logger } from './util/logger.js';
 
 const DEFAULT_INPUT = path.join('input', 'youtube-tests.xlsx');
@@ -174,10 +173,7 @@ async function showReport() {
     logger.warn(`No report at ${REPORT_PATH}. Run the tests first.`);
     return 1;
   }
-  const child = spawn(NPX, ['playwright', 'show-report', path.dirname(REPORT_PATH)], {
-    stdio: 'inherit',
-  });
-  return new Promise((resolve) => child.on('close', (code) => resolve(code ?? 0)));
+  return spawnReportServer(path.dirname(REPORT_PATH));
 }
 
 async function main() {
