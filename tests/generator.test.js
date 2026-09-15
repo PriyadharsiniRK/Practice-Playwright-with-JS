@@ -94,6 +94,31 @@ test('an unsupported assertion is refused, not silently automated', async () => 
   );
 });
 
+test('"page title" asserts the document title, "video title" asserts an element', async () => {
+  const canonical = await analyzeTestCase(
+    {
+      id: 'TC-UNIT-003',
+      title: 'Title disambiguation',
+      steps: [
+        { stepNumber: 1, text: 'Verify that the page title contains "YouTube"' },
+        { stepNumber: 2, text: 'Verify that the video title contains "Playwright"' },
+        { stepNumber: 3, text: 'Verify that the title contains "YouTube"' },
+      ],
+    },
+    { provider: heuristic },
+  );
+  assert.deepEqual(
+    canonical.steps.map((step) => step.action),
+    ['ASSERT_TITLE', 'ASSERT_TEXT', 'ASSERT_TITLE'],
+  );
+  // The element-scoped one must resolve to the heading, not the browser tab.
+  assert.equal(resolveTarget(canonical.steps[1].target).catalogId, 'youtube.videoTitle');
+
+  const { code } = generateSpec(canonical);
+  assert.match(code, /await expect\(page\)\.toHaveTitle\(\/YouTube\/i\)/);
+  assert.match(code, /await expect\(page\.locator\('h1\.ytd-watch-metadata'\)\)\.toContainText\(\/Playwright\/i\)/);
+});
+
 test('string and regex literals in generated code are escaped', async () => {
   const canonical = await analyzeTestCase(
     {

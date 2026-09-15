@@ -32,6 +32,14 @@ const PRESS = /\bpress\b\s+(?:the\s+)?["']?(enter|return|escape|tab|arrow\w+|spa
 const ASSERT = /^(verify|check|assert|validate|ensure|confirm|the\s+\w+\s+should)\b/i;
 const BACK = /\b(navigate|go)\s+back\b|\bpress\s+back\b|\bbrowser\s+back\b/i;
 
+/**
+ * "title" is ambiguous: the browser tab title, or the title *of an element on
+ * the page*. Only a page/browser/tab qualifier - or no qualifier at all - means
+ * the document title; "video title" names an element and is asserted as text.
+ */
+const PAGE_TITLE = /\b(page|browser|tab|window)\s+title\b|\btitle\s+of\s+the\s+(page|tab|browser|window)\b/i;
+const TITLE_QUALIFIER = /\b([a-z][a-z-]*)\s+title\b/i;
+
 /** Strips leading prepositions/articles so "in the search box" -> "search box". */
 function cleanTarget(text) {
   return text
@@ -72,9 +80,15 @@ function interpretAssertion(text) {
   const quoted = quotedValue(text);
 
   if (/\btitle\b/i.test(text)) {
-    const expected = quoted ?? text.match(/contains?\s+(.+?)\s*$/i)?.[1]?.replace(/[.\s]+$/, '');
-    if (!expected) return null;
-    return { action: 'ASSERT_TITLE', target: null, value: expected };
+    const qualifier = text.match(TITLE_QUALIFIER)?.[1]?.toLowerCase();
+    // An unqualified "the title" means the document title; "video title" does not.
+    const isDocumentTitle = PAGE_TITLE.test(text) || !qualifier || qualifier === 'the';
+    if (isDocumentTitle) {
+      const expected = quoted ?? text.match(/contains?\s+(.+?)\s*$/i)?.[1]?.replace(/[.\s]+$/, '');
+      if (!expected) return null;
+      return { action: 'ASSERT_TITLE', target: null, value: expected };
+    }
+    // Otherwise it names an element - fall through to the text/visibility checks.
   }
 
   if (/\burl\b|\baddress\s+bar\b/i.test(text)) {

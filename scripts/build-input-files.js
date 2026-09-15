@@ -68,6 +68,47 @@ export const TEST_CASES = [
       { text: 'Verify that the URL contains "/results"', expected: 'The search results page is shown again' },
     ],
   },
+  {
+    id: 'TC-YT-005',
+    title: 'Search results match the query',
+    preconditions: ['User has internet access.'],
+    steps: [
+      { text: 'Open https://www.youtube.com', expected: 'YouTube homepage is displayed' },
+      { text: 'Enter "Playwright automation" in the search box', expected: 'Search text is entered' },
+      { text: 'Click the Search button', expected: 'Search is submitted' },
+      { text: 'Verify that search results are displayed', expected: 'A list of matching videos is shown' },
+      { text: 'Verify that the search results list contains "Playwright"', expected: 'Results mention the query' },
+      { text: 'Verify that the page title contains "Playwright automation"', expected: 'Tab shows the query' },
+    ],
+  },
+  {
+    id: 'TC-YT-006',
+    title: 'Open a video and verify its details',
+    preconditions: ['User has internet access.'],
+    steps: [
+      { text: 'Open https://www.youtube.com', expected: 'YouTube homepage is displayed' },
+      { text: 'Enter "Playwright automation" in the search box', expected: 'Search text is entered' },
+      { text: 'Press Enter', expected: 'Search is submitted' },
+      { text: 'Click the first search result', expected: 'The video opens' },
+      { text: 'Verify that the video page is displayed', expected: 'The URL contains /watch' },
+      { text: 'Verify that the video player is visible', expected: 'The player is rendered' },
+      { text: 'Verify that the video title contains "Playwright"', expected: 'The heading names the video' },
+    ],
+  },
+  {
+    id: 'TC-YT-007',
+    title: 'Return to the homepage using the logo',
+    preconditions: ['User has internet access.'],
+    steps: [
+      { text: 'Open https://www.youtube.com', expected: 'YouTube homepage is displayed' },
+      { text: 'Enter "Playwright automation" in the search box', expected: 'Search text is entered' },
+      { text: 'Click the Search button', expected: 'Search results are displayed' },
+      { text: 'Verify that search results are displayed', expected: 'A list of matching videos is shown' },
+      { text: 'Click the YouTube logo', expected: 'The browser returns to the homepage' },
+      { text: 'Verify that the page title contains "YouTube"', expected: 'Tab reads YouTube' },
+      { text: 'Verify that the search box is visible', expected: 'The search box is shown in the header' },
+    ],
+  },
 ];
 
 async function buildExcel(filePath) {
