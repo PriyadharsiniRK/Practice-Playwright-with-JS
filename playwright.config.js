@@ -45,14 +45,23 @@ export default defineConfig({
     },
   ],
 
+  // One stand-in per application under test.
   ...(offline
     ? {
-        webServer: {
-          command: 'node mock/server.js',
-          url: 'http://127.0.0.1:4173/',
-          reuseExistingServer: true,
-          timeout: 30_000,
-        },
+        webServer: [
+          {
+            command: 'node mock/server.js',
+            url: 'http://127.0.0.1:4173/',
+            reuseExistingServer: true,
+            timeout: 30_000,
+          },
+          {
+            command: 'node mock/orangehrm.js',
+            url: 'http://127.0.0.1:4174/web/index.php/auth/login',
+            reuseExistingServer: true,
+            timeout: 30_000,
+          },
+        ],
       }
     : {}),
 });

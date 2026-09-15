@@ -13,6 +13,7 @@ import {
   describeZodError,
   normalizeAnalyzedStep,
 } from '../model/testCaseSchema.js';
+import { DEFAULT_APPLICATION, applicationForTestCase } from '../generator/applications/index.js';
 import { createHeuristicProvider } from './heuristicProvider.js';
 import { createLlmProvider, isConfigured } from './llmProvider.js';
 
@@ -54,15 +55,17 @@ function validateStep(answer, rawStep) {
 
 /**
  * @param {object} rawTestCase parsed manual test case
- * @param {{ provider?: object, onStep?: (step: object) => void }} [options]
+ * @param {{ provider?: object, application?: object, onStep?: (step: object) => void }} [options]
  * @returns {Promise<object>} canonical test case
  */
 export async function analyzeTestCase(rawTestCase, options = {}) {
   const provider = options.provider ?? createProvider('auto');
+  // One application per test case, chosen from the first URL it navigates to.
+  const application = options.application ?? applicationForTestCase(rawTestCase) ?? DEFAULT_APPLICATION;
   const steps = [];
 
   for (const rawStep of rawTestCase.steps) {
-    const answer = await provider.interpret(rawTestCase, rawStep);
+    const answer = await provider.interpret(rawTestCase, rawStep, { application });
     const step = validateStep(answer, rawStep);
     steps.push(step);
     options.onStep?.(step);
@@ -71,6 +74,7 @@ export async function analyzeTestCase(rawTestCase, options = {}) {
   const canonical = {
     id: rawTestCase.id,
     title: rawTestCase.title,
+    application: application.id,
     ...(rawTestCase.preconditions?.length ? { preconditions: rawTestCase.preconditions } : {}),
     steps,
   };

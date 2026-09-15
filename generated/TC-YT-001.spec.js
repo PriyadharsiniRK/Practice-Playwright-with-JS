@@ -2,6 +2,7 @@
 // GENERATED FILE - do not edit by hand.
 // Produced by playwright-test-generator from a manual test case.
 //   test case : TC-YT-001
+//   application: YouTube
 //   source    : input/youtube-tests.xlsx
 //   analyzer  : heuristic
 // Re-run `npm run generate` after editing the manual test case.

@@ -7,9 +7,9 @@
  */
 
 import { ACTIONS } from '../model/testCaseSchema.js';
-import { TARGET_CATALOG } from '../generator/selectorStrategy.js';
+import { DEFAULT_APPLICATION } from '../generator/applications/index.js';
 
-export const SYSTEM_PROMPT = [
+const buildSystemPrompt = (application) => [
   'You convert a single manual (human written) test step into one structured action.',
   '',
   'You are the language-understanding stage of a test automation pipeline. A separate,',
@@ -32,13 +32,14 @@ export const SYSTEM_PROMPT = [
   '- ASSERT_URL     : check the page URL. "value" is the substring to expect, e.g. "/watch".',
   '- ASSERT_TITLE   : check the page title. "value" is the substring to expect.',
   '',
-  'Guidance for the application under test (YouTube):',
-  '- "verify the video page is displayed" is an ASSERT_URL with value "/watch".',
-  '- "verify search results are displayed" is an ASSERT_VISIBLE on the search results list.',
+  `Guidance for the application under test (${application.name}):`,
+  ...application.assertionHints.map(
+    (hint) => `- a step matching ${hint.match} is ${hint.action} with value "${hint.value}".`,
+  ),
   '- Quoted text in a step is the value to type or assert, not part of the target.',
   '',
   'Known element descriptions - reuse this wording in "target.description" when it fits:',
-  ...TARGET_CATALOG.map((entry) => `- ${entry.description}`),
+  ...application.targets.map((entry) => `- ${entry.description}`),
   '',
   'For "target.role" use an ARIA role (button, link, combobox, textbox, heading, img).',
   'For "target.name" use the accessible name a user would read on the element.',
@@ -46,6 +47,8 @@ export const SYSTEM_PROMPT = [
   'If the step cannot be expressed with the supported actions, still pick the closest',
   'action and describe the difficulty in "expected" so a human can review it.',
 ].join('\n');
+
+export const systemPromptFor = (application = DEFAULT_APPLICATION) => buildSystemPrompt(application);
 
 /**
  * @param {object} testCase raw test case (for context)

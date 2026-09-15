@@ -12,6 +12,7 @@
 import { ErrorCode, PipelineError, unsupportedAssertion } from '../errors.js';
 import { TestCaseSchema } from '../model/testCaseSchema.js';
 import { escapeRegExp, resolveTarget } from './selectorStrategy.js';
+import { DEFAULT_APPLICATION, applicationById } from './applications/index.js';
 
 const INDENT = '  ';
 
@@ -61,7 +62,8 @@ export function emitLocator(spec) {
 
 /**
  * Rewrites a NAVIGATE url onto a different origin. Used by the offline demo so
- * the very same canonical test case can run against a local stand-in.
+ * the very same canonical test case can run against a local stand-in; each
+ * application has its own stand-in port.
  */
 function applyBaseUrl(url, baseUrl) {
   if (!baseUrl) return url;
@@ -79,7 +81,7 @@ function applyBaseUrl(url, baseUrl) {
 /** Builds the statement(s) for one canonical step. */
 function emitStep(step, options) {
   const lines = [`// Step ${step.stepNumber}: ${step.originalText}`];
-  const locatorFor = () => emitLocator(resolveTarget(step.target).spec);
+  const locatorFor = () => emitLocator(resolveTarget(step.target, options.application).spec);
 
   switch (step.action) {
     case 'NAVIGATE': {
@@ -137,7 +139,7 @@ function emitStep(step, options) {
 
 /**
  * @param {object} testCase canonical test case
- * @param {{ baseUrl?: string, sourceFile?: string, provider?: string }} [options]
+ * @param {{ offline?: boolean, baseUrl?: string, sourceFile?: string, provider?: string }} [options]
  * @returns {{ fileName: string, code: string }}
  */
 export function generateSpec(testCase, options = {}) {
@@ -148,12 +150,16 @@ export function generateSpec(testCase, options = {}) {
     });
   }
   const canonical = parsed.data;
+  const application = applicationById(canonical.application) ?? DEFAULT_APPLICATION;
+  // `--offline` swaps only the origin; every selector and assertion is unchanged.
+  const baseUrl = options.offline ? `http://127.0.0.1:${application.offlinePort}` : options.baseUrl;
 
   const header = [
     '// ---------------------------------------------------------------------------',
     '// GENERATED FILE - do not edit by hand.',
     '// Produced by playwright-test-generator from a manual test case.',
     `//   test case : ${canonical.id}`,
+    `//   application: ${application.name}`,
     options.sourceFile ? `//   source    : ${options.sourceFile}` : null,
     options.provider ? `//   analyzer  : ${options.provider}` : null,
     '// Re-run `npm run generate` after editing the manual test case.',
@@ -170,7 +176,7 @@ export function generateSpec(testCase, options = {}) {
 
   canonical.steps.forEach((step, index) => {
     if (index > 0) body.push('');
-    for (const line of emitStep(step, options)) body.push(INDENT + line);
+    for (const line of emitStep(step, { ...options, application, baseUrl })) body.push(INDENT + line);
   });
 
   const code = [

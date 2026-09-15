@@ -12,7 +12,7 @@ import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
 import { z } from 'zod';
 import { ErrorCode, PipelineError } from '../errors.js';
 import { ACTIONS } from '../model/testCaseSchema.js';
-import { SYSTEM_PROMPT, buildUserPrompt } from './prompt.js';
+import { systemPromptFor, buildUserPrompt } from './prompt.js';
 
 export const DEFAULT_MODEL = 'claude-opus-5';
 
@@ -44,11 +44,11 @@ export function createLlmProvider(options = {}) {
   const model = options.model ?? process.env.ANALYZER_MODEL ?? DEFAULT_MODEL;
   const client = new Anthropic();
 
-  async function ask(testCase, rawStep, repairNote) {
+  async function ask(testCase, rawStep, repairNote, application) {
     const response = await client.messages.parse({
       model,
       max_tokens: 2048,
-      system: SYSTEM_PROMPT,
+      system: systemPromptFor(application),
       messages: [{ role: 'user', content: buildUserPrompt(testCase, rawStep, repairNote) }],
       output_config: {
         format: zodOutputFormat(LlmStepSchema),
@@ -76,13 +76,13 @@ export function createLlmProvider(options = {}) {
     /**
      * @returns {Promise<object>} an object shaped like AnalyzedStepSchema
      */
-    async interpret(testCase, rawStep) {
+    async interpret(testCase, rawStep, context = {}) {
       try {
-        return await ask(testCase, rawStep);
+        return await ask(testCase, rawStep, undefined, context.application);
       } catch (error) {
         if (error instanceof PipelineError) {
           // Controlled repair: hand the failure back to the model once.
-          return ask(testCase, rawStep, error.message);
+          return ask(testCase, rawStep, error.message, context.application);
         }
         throw new PipelineError(
           ErrorCode.INVALID_LLM_RESPONSE,

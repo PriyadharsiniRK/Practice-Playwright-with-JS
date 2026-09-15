@@ -17,13 +17,12 @@ import { parseDocument, selectTestCase } from './parser/index.js';
 import { analyzeTestCase, createProvider } from './analyzer/testCaseAnalyzer.js';
 import { generateSpec } from './generator/playwrightGenerator.js';
 import { resolveTarget } from './generator/selectorStrategy.js';
+import { DEFAULT_APPLICATION, applicationForTestCase } from './generator/applications/index.js';
 import { REPORT_PATH, runTests } from './executor/testExecutor.js';
 import { logger } from './util/logger.js';
 
 const DEFAULT_INPUT = path.join('input', 'youtube-tests.xlsx');
 const DEFAULT_OUTPUT_DIR = 'generated';
-/** Origin used by `--offline`, served by mock/server.js. */
-const OFFLINE_BASE_URL = 'http://127.0.0.1:4173';
 
 const HELP_FLAGS = ['-h', '--help', 'help'];
 
@@ -90,8 +89,8 @@ Options:
                           default: ${DEFAULT_INPUT}
   -o, --out <dir>         output directory for generated specs (default: ${DEFAULT_OUTPUT_DIR})
   -p, --provider <mode>   auto | llm | heuristic  (default: auto)
-      --offline           generate and run against the bundled local stand-in
-                          instead of youtube.com
+      --offline           generate and run against the bundled local stand-ins
+                          instead of the real sites
       --headed            run the browser headed
   -h, --help              show this help
 `;
@@ -120,24 +119,27 @@ async function analyze(rawTestCases, options) {
   const analyzed = [];
   for (const rawTestCase of rawTestCases) {
     if (rawTestCases.length > 1) logger.info(`  ${rawTestCase.id}`);
+    const application = applicationForTestCase(rawTestCase) ?? DEFAULT_APPLICATION;
     const canonical = await analyzeTestCase(rawTestCase, {
       provider,
+      application,
       onStep: (step) => {
-        const detail = describeStep(step);
+        const detail = describeStep(step, application);
         logger.step(`Step ${step.stepNumber} -> ${step.action}${detail ? `  ${detail}` : ''}`);
       },
     });
+    logger.step(`${rawTestCase.id} -> application: ${application.name}`);
     analyzed.push({ raw: rawTestCase, canonical, provider: provider.name });
   }
   return analyzed;
 }
 
 /** One-line explanation of what the framework decided for a step. */
-function describeStep(step) {
+function describeStep(step, application) {
   if (step.action === 'NAVIGATE') return `url = ${step.value}`;
   const bits = [];
   if (step.target) {
-    const resolved = resolveTarget(step.target);
+    const resolved = resolveTarget(step.target, application);
     bits.push(`target = ${resolved.catalogId ?? step.target.description} [${resolved.strategy}]`);
   }
   if (step.value) bits.push(`value = ${step.value}`);
@@ -152,7 +154,7 @@ function generate(analyzed, options) {
   const written = [];
   for (const entry of analyzed) {
     const { fileName, code } = generateSpec(entry.canonical, {
-      baseUrl: options.offline ? OFFLINE_BASE_URL : undefined,
+      offline: options.offline,
       sourceFile: entry.raw.source,
       provider: entry.provider,
     });
@@ -162,7 +164,7 @@ function generate(analyzed, options) {
     written.push(filePath);
   }
   if (options.offline) {
-    logger.warn(`Offline mode: generated tests target ${OFFLINE_BASE_URL} instead of youtube.com.`);
+    logger.warn('Offline mode: generated tests target the bundled local stand-ins, not the real sites.');
   }
   return written;
 }

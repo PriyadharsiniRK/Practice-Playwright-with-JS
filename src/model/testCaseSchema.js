@@ -48,6 +48,8 @@ export const TestStepSchema = z.object({
 export const TestCaseSchema = z.object({
   id: z.string().min(1),
   title: z.string().min(1),
+  /** Id of the application under test, resolved from the first navigation URL. */
+  application: z.string().min(1).optional(),
   preconditions: z.array(z.string()).optional(),
   steps: z.array(TestStepSchema).min(1),
 });

@@ -4,6 +4,9 @@ Turn a manual test case written in **Excel or Word** into an executable
 **Playwright** test — parsed, understood, normalised, generated, executed and
 reported, without anyone writing automation code.
 
+Ships with two applications under test: **YouTube** (search and playback) and
+**OrangeHRM** (login-gated HR app).
+
 ```
 Manual Test Case  →  Parse  →  Understand  →  Normalise  →  Generate  →  Execute  →  Report
    (.xlsx/.docx)                  (LLM)      (canonical)   (.spec.js)  (Playwright)  (HTML)
@@ -154,17 +157,25 @@ playwright-test-generator/
 │   │   └── testCaseSchema.js     # the canonical model (single source of truth)
 │   ├── generator/
 │   │   ├── playwrightGenerator.js# canonical model → .spec.js
-│   │   └── selectorStrategy.js   # selector priority + application catalog
+│   │   ├── selectorStrategy.js   # selector priority, application-scoped
+│   │   └── applications/         # one file per app under test
+│   │       ├── index.js          #   registry + hostname resolution
+│   │       ├── youtube.js
+│   │       └── orangehrm.js
 │   ├── executor/
 │   │   └── testExecutor.js       # runs Playwright, returns the exit code
 │   ├── util/logger.js
 │   └── cli.js
 ├── input/
 │   ├── youtube-tests.xlsx        # sample manual test cases
-│   └── youtube-tests.docx
+│   ├── youtube-tests.docx
+│   ├── orangehrm-tests.xlsx
+│   └── orangehrm-tests.docx
 ├── generated/                    # generated specs (committed, never hand edited)
 ├── tests/                        # unit tests for the framework itself
-├── mock/server.js                # offline stand-in for youtube.com
+├── mock/
+│   ├── server.js                 # offline stand-in for youtube.com
+│   └── orangehrm.js              # offline stand-in for the OrangeHRM demo
 ├── scripts/build-input-files.js  # regenerates the sample documents
 ├── reports/                      # Playwright HTML report + traces
 ├── playwright.config.js
@@ -334,6 +345,11 @@ element; the framework decides how to find it, in this priority order:
 5. locator()            ← CSS, last resort
 ```
 
+Each test case is bound to **one application**, chosen from the hostname of its
+first navigation step. That keeps element vocabularies from colliding: "search
+box" means YouTube's masthead combobox in one test case and OrangeHRM's sidebar
+filter in another, and the framework never has to guess which.
+
 Resolution happens in `src/generator/selectorStrategy.js`:
 
 1. **Application catalog** — well-known elements of the app under test are
@@ -433,7 +449,65 @@ failing line in CI points straight back at a line in the manual test case.
 
 ---
 
-## 11. Commands
+## 11. A second application: OrangeHRM
+
+The same pipeline, the same input format, a different site. Nothing in
+`src/parser/`, `src/model/`, `src/generator/playwrightGenerator.js` or
+`src/executor/` knows which application it is working on.
+
+**Manual test case** (`input/orangehrm-tests.xlsx`)
+
+```
+Test Case ID: TC-OHRM-002
+Title:        Reject invalid credentials
+
+1. Open https://opensource-demo.orangehrmlive.com
+2. Enter "Admin" in the Username field
+3. Enter "wrong-password" in the Password field
+4. Click the Login button
+5. Verify that the login error message is visible
+6. Verify that the URL contains "/auth/login"
+```
+
+**Generated `generated/TC-OHRM-002.spec.js`**
+
+```js
+await page.goto('https://opensource-demo.orangehrmlive.com');
+await page.getByPlaceholder(/username/i).fill('Admin');
+await page.getByPlaceholder(/password/i).fill('wrong-password');
+await page.getByRole('button', { name: /^\s*login\s*$/i }).click();
+await expect(page.getByText(/invalid credentials/i)).toBeVisible();
+await expect(page).toHaveURL(/\/auth\/login/i);
+```
+
+OrangeHRM's inputs carry a placeholder but no label or accessible name, and its
+login failure is a text banner — so it reaches the `getByPlaceholder()` and
+`getByText()` tiers of the selector strategy that a search-only site never
+touches. Between the two applications, **all five tiers and all nine canonical
+actions** are exercised.
+
+### Adding a third application
+
+Write one file under `src/generator/applications/` and register it:
+
+```js
+export const myapp = {
+  id: 'myapp',
+  name: 'My App',
+  hosts: [/(^|\.)myapp\.com$/i],
+  baseUrl: 'https://myapp.com',
+  offlinePort: 4175,
+  targets: [ /* description -> locator */ ],
+  assertionHints: [ /* "the basket is displayed" -> ASSERT_URL /basket */ ],
+};
+```
+
+No pipeline code changes. The application is picked automatically from the URL
+in step 1 of the manual test case.
+
+---
+
+## 12. Commands
 
 ```bash
 npm run parse             -- TC-YT-001     # document → raw steps (JSON)
@@ -442,7 +516,8 @@ npm run generate          -- TC-YT-001     # canonical model → generated/*.spe
 npm test                                   # run every generated spec
 npm run generate-and-test -- TC-YT-001     # the whole pipeline
 npm run report                             # open the HTML report
-npm run demo                               # full pipeline, offline
+npm run demo                               # full pipeline, offline (YouTube)
+npm run demo:orangehrm                     # full pipeline, offline (OrangeHRM)
 npm run test:unit                          # unit tests for the framework
 npm run build:inputs                       # regenerate the sample documents
 ```
@@ -463,9 +538,16 @@ Omit the test case id to process every test case in the document.
 npm run generate-and-test -- TC-YT-003 --input input/youtube-tests.docx
 ```
 
+### Running the OrangeHRM cases
+
+```bash
+npm run generate-and-test -- --input input/orangehrm-tests.xlsx
+npm run generate-and-test -- --input input/orangehrm-tests.docx
+```
+
 ---
 
-## 12. Adding a new test case — the point of the whole thing
+## 13. Adding a new test case — the point of the whole thing
 
 Add rows to the spreadsheet. That is the entire workflow.
 
@@ -497,7 +579,7 @@ existing elements needs nothing at all.
 
 ---
 
-## 13. Error handling
+## 14. Error handling
 
 The pipeline refuses to produce automation it cannot stand behind. Every
 failure carries a stable code and a non-zero exit status.
@@ -549,12 +631,12 @@ A half-understood step never becomes a half-correct test.
 
 ---
 
-## 14. Test report
+## 15. Test report
 
 `npm test` writes a Playwright HTML report to `reports/html/`; open it with
 `npm run report`.
 
-![Playwright HTML report showing four generated YouTube test cases passing](docs/playwright-html-report.png)
+![Playwright HTML report showing ten generated test cases passing across YouTube and OrangeHRM](docs/playwright-html-report.png)
 
 Traces, screenshots and video are retained on failure under
 `reports/artifacts/`, so a failed generated test is debuggable exactly like a
@@ -562,10 +644,11 @@ hand-written one.
 
 ---
 
-## 15. Offline mode
+## 16. Offline mode
 
-`--offline` points the generated tests at `mock/server.js`, a ~130-line stand-in
-that reproduces only the accessibility hooks the tests use — the "Search"
+`--offline` points the generated tests at the bundled stand-ins — `mock/server.js`
+for YouTube (port 4173) and `mock/orangehrm.js` for OrangeHRM (port 4174), each
+a small server reproducing only the accessibility hooks the tests use — the "Search"
 combobox and button, `ytd-search`, `ytd-video-renderer`, the "YouTube Home"
 logo link and `#movie_player`.
 
@@ -577,7 +660,7 @@ that runs against the real site.
 
 ---
 
-## 16. Design decisions
+## 17. Design decisions
 
 * **The LLM never emits code.** It fills in a small JSON object; a template
   engine produces the Playwright source. This is the single decision the whole
@@ -602,10 +685,10 @@ that runs against the real site.
 
 ---
 
-## 17. Limitations
+## 18. Limitations
 
-* Scope is a deliberately small slice of YouTube: open, search, verify results,
-  open a video, verify URL/title/visibility, navigate back.
+* Scope is a deliberately small slice of each application: search and playback
+  on YouTube; login, the dashboard and the PIM menu on OrangeHRM.
 * Nine canonical actions and four assertion kinds. Anything else is refused
   rather than approximated.
 * One header-row Excel layout and one Word layout. No merged cells, no
@@ -621,7 +704,7 @@ that runs against the real site.
 
 ---
 
-## 18. Future enhancements
+## 19. Future enhancements
 
 Not implemented, and deliberately so:
 
@@ -634,11 +717,10 @@ Not implemented, and deliberately so:
 * Test case deduplication and coverage analysis
 * Page Object Model generation
 * CI/CD integration and a test execution dashboard
-* Multiple applications / domains in one catalog
 * Human approval gate before generated tests are executed
 
 ---
 
-## 19. Licence
+## 20. Licence
 
 MIT — see [LICENSE](LICENSE).

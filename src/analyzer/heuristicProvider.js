@@ -14,6 +14,7 @@
  */
 
 import { ErrorCode, PipelineError } from '../errors.js';
+import { DEFAULT_APPLICATION } from '../generator/applications/index.js';
 
 const URL_PATTERN = /\bhttps?:\/\/[^\s"'<>]+/i;
 /**
@@ -56,7 +57,8 @@ function cleanTarget(text) {
 /** Nouns that name an ARIA role rather than the element itself. */
 const ROLE_NOUNS = [
   { pattern: /\bbuttons?\b/i, role: 'button' },
-  { pattern: /\b(box|bar|input|fields?)\b/i, role: 'combobox' },
+  { pattern: /\b(combo\s*box|dropdown|select)\b/i, role: 'combobox' },
+  { pattern: /\b(box|bar|input|fields?)\b/i, role: 'textbox' },
   { pattern: /\b(links?|logos?)\b/i, role: 'link' },
   { pattern: /\b(headings?|titles?)\b/i, role: 'heading' },
 ];
@@ -76,7 +78,7 @@ const target = (description) => {
 };
 
 /** Classifies an assertion step into one of the four supported assertions. */
-function interpretAssertion(text) {
+function interpretAssertion(text, application) {
   const quoted = quotedValue(text);
 
   if (/\btitle\b/i.test(text)) {
@@ -97,12 +99,12 @@ function interpretAssertion(text) {
     return { action: 'ASSERT_URL', target: null, value: expected };
   }
 
-  // Domain shorthand: "the video page is displayed" is a URL assertion.
-  if (/\b(video|watch)\s+page\b/i.test(text)) {
-    return { action: 'ASSERT_URL', target: null, value: '/watch' };
-  }
-  if (/\b(home\s*page|homepage)\b/i.test(text) && /youtube/i.test(text)) {
-    return { action: 'ASSERT_TITLE', target: null, value: 'YouTube' };
+  // Domain shorthands supplied by the application under test, e.g. on YouTube
+  // "the video page is displayed" means the URL contains /watch.
+  for (const hint of application.assertionHints ?? []) {
+    if (hint.match.test(text)) {
+      return { action: hint.action, target: null, value: hint.value };
+    }
   }
 
   if (quoted && /\b(contains?|shows?|displays?|reads?)\b/i.test(text)) {
@@ -119,7 +121,8 @@ function interpretAssertion(text) {
 export function createHeuristicProvider() {
   return {
     name: 'heuristic',
-    async interpret(testCase, rawStep) {
+    async interpret(testCase, rawStep, context = {}) {
+      const application = context.application ?? DEFAULT_APPLICATION;
       const text = rawStep.text.trim();
       const base = { stepNumber: rawStep.stepNumber, originalText: text, expected: rawStep.expected ?? null };
 
@@ -139,7 +142,7 @@ export function createHeuristicProvider() {
       }
 
       if (ASSERT.test(text)) {
-        const assertion = interpretAssertion(text);
+        const assertion = interpretAssertion(text, application);
         if (!assertion) {
           throw new PipelineError(ErrorCode.UNSUPPORTED_ACTION, 'Unsupported assertion.', {
             hint: [
