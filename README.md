@@ -191,7 +191,7 @@ git clone https://github.com/PriyadharsiniRK/Practice-Playwright-with-JS.git
 cd Practice-Playwright-with-JS
 
 npm install
-npx playwright install chromium
+npm run install:browsers   # not `npx playwright install` - see below
 
 # Optional - enables the LLM analyzer. Without it the offline analyzer is used.
 cp .env.example .env   # then set ANTHROPIC_API_KEY
@@ -202,6 +202,13 @@ Try it immediately, no API key and no internet required:
 ```bash
 npm run demo
 ```
+
+> **Use `npm run install:browsers`, not `npx playwright install`.** Playwright
+> pins each release to an exact browser revision, and `npx` resolves whichever
+> Playwright version *it* finds - which may not be this project's. Installing the
+> wrong revision leaves every test failing in milliseconds with
+> `Executable doesn't exist at ...chromium_headless_shell-NNNN...`. The npm script
+> always uses the project's own Playwright, so the revisions match.
 
 ---
 
@@ -520,6 +527,7 @@ npm run demo                               # full pipeline, offline (YouTube)
 npm run demo:orangehrm                     # full pipeline, offline (OrangeHRM)
 npm run test:unit                          # unit tests for the framework
 npm run build:inputs                       # regenerate the sample documents
+npm run install:browsers                   # download the matching Chromium
 ```
 
 Omit the test case id to process every test case in the document.

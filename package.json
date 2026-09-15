@@ -13,6 +13,7 @@
     "generate": "node src/cli.js generate",
     "test": "playwright test",
     "report": "playwright show-report reports/html",
+    "install:browsers": "playwright install chromium",
     "generate-and-test": "node src/cli.js generate-and-test",
     "demo": "node src/cli.js generate-and-test --offline",
     "build:inputs": "node scripts/build-input-files.js && node scripts/build-orangehrm-inputs.js",
