@@ -88,7 +88,18 @@ export function runTests(specFiles = [], options = {}) {
   });
 }
 
-/** Opens the HTML report, using the same shim-free invocation as runTests. */
+/**
+ * Opens the HTML report, using the same shim-free invocation as runTests.
+ *
+ * The report is served over HTTP rather than opened from disk: the reporter
+ * writes index.html plus a data/ directory that the page fetches at runtime,
+ * and those fetches are blocked under file://.
+ *
+ * `--host 127.0.0.1` is deliberate. Playwright defaults to "localhost", which
+ * on Windows can resolve to ::1 for one process and 127.0.0.1 for another, so
+ * the browser reports ERR_CONNECTION_REFUSED against a server that is running
+ * perfectly well. Pinning the address makes both ends agree.
+ */
 export function showReport(reportDir) {
   const cli = resolvePlaywrightCli();
   if (!cli) {
@@ -98,7 +109,9 @@ export function showReport(reportDir) {
       }),
     );
   }
-  const child = spawn(process.execPath, [cli, 'show-report', reportDir], { stdio: 'inherit' });
+  const child = spawn(process.execPath, [cli, 'show-report', reportDir, '--host', '127.0.0.1'], {
+    stdio: 'inherit',
+  });
   return new Promise((resolve) => child.on('close', (code) => resolve(code ?? 0)));
 }
 

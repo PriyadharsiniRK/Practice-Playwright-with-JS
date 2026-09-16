@@ -12,7 +12,7 @@
     "analyze": "node src/cli.js analyze",
     "generate": "node src/cli.js generate",
     "test": "playwright test",
-    "report": "playwright show-report reports/html",
+    "report": "playwright show-report reports/html --host 127.0.0.1",
     "install:browsers": "playwright install chromium",
     "generate-and-test": "node src/cli.js generate-and-test",
     "demo": "node src/cli.js generate-and-test --offline",

@@ -563,6 +563,12 @@ npm run build:inputs                       # regenerate the sample documents
 npm run install:browsers                   # download the matching Chromium
 ```
 
+The report is served over HTTP, not opened from disk - the reporter writes
+`index.html` plus a `data/` directory that the page fetches at runtime, and
+those fetches are blocked under `file://`, so double-clicking `index.html`
+gives a blank report. `npm run report` keeps serving until you press Ctrl+C;
+leave it running and open the URL it prints in another window.
+
 Omit the test case id to process every test case in the document.
 
 | Option | Meaning |
