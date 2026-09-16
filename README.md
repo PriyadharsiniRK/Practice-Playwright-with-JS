@@ -214,6 +214,28 @@ npm run demo
 > a partial install can no longer leave every test failing in milliseconds with
 > `Executable doesn't exist at ...chromium_headless_shell-NNNN...`.
 
+### If the browser download will not complete
+
+On some machines `playwright install` reports the transfer as finished but no
+`chrome.exe` ever lands on disk - a proxy that returns the archive body
+incompletely, or an antivirus that removes the extracted binary. The symptom is
+every test failing in milliseconds with:
+
+```
+browserType.launch: Executable doesn't exist at ...\chromium-NNNN\chrome-win\chrome.exe
+```
+
+Set `PW_CHANNEL` to use a browser that is **already installed on the machine**,
+which needs no `playwright install` at all:
+
+```bash
+PW_CHANNEL=chrome npm run demo          # macOS / Linux
+$env:PW_CHANNEL = "chrome"; npm run demo   # Windows PowerShell
+```
+
+`chrome` and `msedge` are both accepted. Everything else - selectors, actions,
+assertions, the report - is unchanged; only the browser binary differs.
+
 ---
 
 ## 6. Input format

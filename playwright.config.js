@@ -13,6 +13,24 @@ const offline = process.env.YT_MOCK === '1';
 /** The CLI's --out directory, so generated specs are runnable wherever they land. */
 const testDir = process.env.GENERATED_DIR || './generated';
 
+/**
+ * Which browser build to launch.
+ *
+ * The default, 'chromium', is the full Chromium that Playwright downloads -
+ * deliberately not the separate chromium-headless-shell artifact, so the suite
+ * depends on one download rather than two.
+ *
+ * Set PW_CHANNEL to use a browser already installed on the machine instead:
+ *
+ *   PW_CHANNEL=chrome   Google Chrome
+ *   PW_CHANNEL=msedge   Microsoft Edge
+ *
+ * That path needs no `playwright install` at all, which is the way out when the
+ * download cannot complete on a given machine (proxy, or antivirus removing the
+ * extracted binary).
+ */
+const channel = process.env.PW_CHANNEL || 'chromium';
+
 export default defineConfig({
   testDir,
   testMatch: '**/*.spec.js',
@@ -43,11 +61,7 @@ export default defineConfig({
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
-        // Use the full Chromium build rather than the separate
-        // chromium-headless-shell download: one artifact to install instead of
-        // two, and a partial `playwright install` can no longer leave the suite
-        // unable to launch.
-        channel: 'chromium',
+        channel,
       },
     },
   ],
