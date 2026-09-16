@@ -236,6 +236,13 @@ $env:PW_CHANNEL = "chrome"; npm run demo   # Windows PowerShell
 `chrome` and `msedge` are both accepted. Everything else - selectors, actions,
 assertions, the report - is unchanged; only the browser binary differs.
 
+Video capture is off by default for the same reason: it is the one artifact that
+needs Playwright's **ffmpeg** binary, which ships with the browser download, so
+on such a machine every test would otherwise fail at `browserContext.newPage`
+before running a step. Traces and screenshots need no extra binary and stay on,
+so the HTML report still explains every failure. Set `PW_VIDEO=1` to record
+video too.
+
 ---
 
 ## 6. Input format

@@ -31,6 +31,17 @@ const testDir = process.env.GENERATED_DIR || './generated';
  */
 const channel = process.env.PW_CHANNEL || 'chromium';
 
+/**
+ * Video capture is the one artifact that needs Playwright's ffmpeg binary, and
+ * ffmpeg arrives with the browser download. A machine that cannot complete that
+ * download would otherwise fail at `browserContext.newPage` before running a
+ * single step, even when the browser itself is fine (see PW_CHANNEL above).
+ *
+ * Traces and screenshots need no extra binary and stay on, so the HTML report
+ * still explains every failure. Set PW_VIDEO=1 to record video as well.
+ */
+const video = process.env.PW_VIDEO === '1' ? 'retain-on-failure' : 'off';
+
 export default defineConfig({
   testDir,
   testMatch: '**/*.spec.js',
@@ -53,7 +64,7 @@ export default defineConfig({
     locale: 'en-US',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
+    video,
   },
 
   projects: [
