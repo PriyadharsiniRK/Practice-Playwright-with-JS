@@ -36,6 +36,7 @@ function parseArgs(argv) {
     provider: 'auto',
     offline: false,
     headed: false,
+    screenshots: true,
   };
   const rest = argv.slice(1);
   for (let i = 0; i < rest.length; i += 1) {
@@ -58,6 +59,9 @@ function parseArgs(argv) {
         break;
       case '--headed':
         options.headed = true;
+        break;
+      case '--no-screenshots':
+        options.screenshots = false;
         break;
       case '--help':
       case '-h':
@@ -91,6 +95,7 @@ Options:
       --offline           generate and run against the bundled local stand-ins
                           instead of the real sites
       --headed            run the browser headed
+      --no-screenshots    omit the per-step screenshots from generated specs
   -h, --help              show this help
 `;
 
@@ -156,6 +161,7 @@ function generate(analyzed, options) {
       offline: options.offline,
       sourceFile: entry.raw.source,
       provider: entry.provider,
+      screenshots: options.screenshots,
     });
     const filePath = path.join(options.outDir, fileName);
     fs.writeFileSync(filePath, code, 'utf8');

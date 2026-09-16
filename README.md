@@ -563,6 +563,13 @@ npm run build:inputs                       # regenerate the sample documents
 npm run install:browsers                   # download the matching Chromium
 ```
 
+Every manual step becomes a named `test.step()` in the generated spec, and each
+one attaches a screenshot of the page as it stood when that step finished. The
+report therefore lists your manual wording verbatim - `Step 4: Click the Login
+button` - with the matching picture underneath, so a manual tester can check
+what the automation actually did without reading any code. Generate with
+`--no-screenshots` to leave the attachments out.
+
 The report is served over HTTP, not opened from disk - the reporter writes
 `index.html` plus a `data/` directory that the page fetches at runtime, and
 those fetches are blocked under `file://`, so double-clicking `index.html`
@@ -578,6 +585,7 @@ Omit the test case id to process every test case in the document.
 | `-p, --provider <mode>` | `auto` (default), `llm`, or `heuristic` |
 | `--offline` | generate and run against the bundled local stand-in |
 | `--headed` | run the browser headed |
+| `--no-screenshots` | omit the per-step screenshots from the generated specs |
 
 ### Reading the Word document instead
 

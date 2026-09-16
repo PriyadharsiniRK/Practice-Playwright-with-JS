@@ -78,9 +78,13 @@ function applyBaseUrl(url, baseUrl) {
   }
 }
 
-/** Builds the statement(s) for one canonical step. */
+/**
+ * Builds the statement(s) for one canonical step. The manual wording is not
+ * repeated here as a comment - it becomes the name of the enclosing
+ * `test.step()`, so it shows up in the HTML report and the trace as well.
+ */
 function emitStep(step, options) {
-  const lines = [`// Step ${step.stepNumber}: ${step.originalText}`];
+  const lines = [];
   const locatorFor = () => emitLocator(resolveTarget(step.target, options.application).spec);
 
   switch (step.action) {
@@ -139,7 +143,8 @@ function emitStep(step, options) {
 
 /**
  * @param {object} testCase canonical test case
- * @param {{ offline?: boolean, baseUrl?: string, sourceFile?: string, provider?: string }} [options]
+ * @param {{ offline?: boolean, baseUrl?: string, sourceFile?: string, provider?: string,
+ *          screenshots?: boolean }} [options] screenshots default to on
  * @returns {{ fileName: string, code: string }}
  */
 export function generateSpec(testCase, options = {}) {
@@ -153,6 +158,7 @@ export function generateSpec(testCase, options = {}) {
   const application = applicationById(canonical.application) ?? DEFAULT_APPLICATION;
   // `--offline` swaps only the origin; every selector and assertion is unchanged.
   const baseUrl = options.offline ? `http://127.0.0.1:${application.offlinePort}` : options.baseUrl;
+  const screenshots = options.screenshots !== false;
 
   const header = [
     '// ---------------------------------------------------------------------------',
@@ -162,6 +168,7 @@ export function generateSpec(testCase, options = {}) {
     `//   application: ${application.name}`,
     options.sourceFile ? `//   source    : ${options.sourceFile}` : null,
     options.provider ? `//   analyzer  : ${options.provider}` : null,
+    `//   screenshots: ${screenshots ? 'one per step' : 'off'}`,
     '// Re-run `npm run generate` after editing the manual test case.',
     '// ---------------------------------------------------------------------------',
     '',
@@ -174,14 +181,28 @@ export function generateSpec(testCase, options = {}) {
     body.push(...canonical.preconditions.map((precondition) => `${INDENT}// Precondition: ${precondition}`), '');
   }
 
+  // Each manual step becomes a named test.step(), so the HTML report and the
+  // trace read as the manual test case did - and, with screenshots on, each one
+  // carries a picture of the page as it stood when that step finished.
   canonical.steps.forEach((step, index) => {
     if (index > 0) body.push('');
-    for (const line of emitStep(step, { ...options, application, baseUrl })) body.push(INDENT + line);
+    body.push(`${INDENT}await test.step(${quote(`Step ${step.stepNumber}: ${step.originalText}`)}, async () => {`);
+    for (const line of emitStep(step, { ...options, application, baseUrl })) {
+      body.push(INDENT + INDENT + line);
+    }
+    if (screenshots) {
+      body.push(
+        `${INDENT}${INDENT}await testInfo.attach(${quote(`Step ${step.stepNumber}`)}, ` +
+          `{ body: await page.screenshot(), contentType: 'image/png' });`,
+      );
+    }
+    body.push(`${INDENT}});`);
   });
 
+  const signature = screenshots ? 'async ({ page }, testInfo) =>' : 'async ({ page }) =>';
   const code = [
     ...header,
-    `test(${quote(`${canonical.id} - ${canonical.title}`)}, async ({ page }) => {`,
+    `test(${quote(`${canonical.id} - ${canonical.title}`)}, ${signature} {`,
     ...body,
     '});',
     '',

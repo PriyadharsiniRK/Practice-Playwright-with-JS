@@ -136,3 +136,28 @@ test('string and regex literals in generated code are escaped', async () => {
   // The generated file must still be valid JavaScript.
   await import(`data:text/javascript,${encodeURIComponent(code.replace(/^import .*$/m, ''))}`).catch(() => {});
 });
+
+test('each manual step becomes a named test.step carrying a screenshot', async () => {
+  const canonical = await analyzeTestCase(rawCase, { provider: heuristic });
+  const { code } = generateSpec(canonical);
+
+  // The manual wording is what names the step, so the report reads like the
+  // original test case rather than like the generated code.
+  assert.match(code, /await test\.step\('Step 2: Enter "Playwright automation" in the search box', async \(\) => \{/);
+  assert.match(
+    code,
+    /await testInfo\.attach\('Step 2', \{ body: await page\.screenshot\(\), contentType: 'image\/png' \}\);/,
+  );
+  // testInfo is only in the signature because the screenshots need it.
+  assert.match(code, /async \(\{ page \}, testInfo\) => \{/);
+  assert.equal(canonical.steps.length, code.match(/await test\.step\(/g).length);
+});
+
+test('--no-screenshots drops the attachments but keeps the named steps', async () => {
+  const canonical = await analyzeTestCase(rawCase, { provider: heuristic });
+  const { code } = generateSpec(canonical, { screenshots: false });
+
+  assert.match(code, /await test\.step\('Step 1: Open https:\/\/www\.youtube\.com', async \(\) => \{/);
+  assert.doesNotMatch(code, /testInfo/);
+  assert.match(code, /async \(\{ page \}\) => \{/);
+});
