@@ -584,6 +584,18 @@ button` - with the matching picture underneath, so a manual tester can check
 what the automation actually did without reading any code. Generate with
 `--no-screenshots` to leave the attachments out.
 
+### Two reports
+
+Every run writes both:
+
+| File | How to open | What it is for |
+| --- | --- | --- |
+| `reports/step-report.html` | double-click it | Cross-checking. One card per manual step: the wording from your document, what the framework did, PASS/FAIL, and the screenshot. Images are embedded, so it is a single self-contained file - no server, and you can email it. |
+| `reports/html/index.html` | `npm run report` | Debugging. Playwright's own report, with traces, timings and the full error context. |
+
+On a failing step the card shows the error and Playwright's failure screenshot,
+labelled as such - a step that fails never reaches its own screenshot call.
+
 The report is served over HTTP, not opened from disk - the reporter writes
 `index.html` plus a `data/` directory that the page fetches at runtime, and
 those fetches are blocked under `file://`, so double-clicking `index.html`

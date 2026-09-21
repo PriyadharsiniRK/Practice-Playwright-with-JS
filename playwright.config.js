@@ -61,6 +61,9 @@ export default defineConfig({
   reporter: [
     ['list'],
     ['html', { outputFolder: 'reports/html', open: 'never' }],
+    // Step-by-step view for cross-checking against the manual test case. Single
+    // file with the screenshots embedded, so it opens without a server.
+    ['./src/report/stepReporter.js', { outputFile: 'reports/step-report.html' }],
   ],
 
   use: {
