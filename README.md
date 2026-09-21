@@ -197,6 +197,9 @@ npm run install:browsers   # not `npx playwright install` - see below
 cp .env.example .env   # then set ANTHROPIC_API_KEY
 ```
 
+`.env` is read on startup (by Node itself - no dotenv dependency) and also
+holds the optional `PW_CHANNEL` and `PW_VIDEO` settings described below.
+
 Try it immediately, no API key and no internet required:
 
 ```bash
@@ -229,9 +232,20 @@ Set `PW_CHANNEL` to use a browser that is **already installed on the machine**,
 which needs no `playwright install` at all:
 
 ```bash
-PW_CHANNEL=chrome npm run demo          # macOS / Linux
+PW_CHANNEL=chrome npm run demo             # macOS / Linux
 $env:PW_CHANNEL = "chrome"; npm run demo   # Windows PowerShell
 ```
+
+A shell variable only lives in that one terminal. To make the setting stick,
+put it in `.env` at the project root instead - the CLI and `playwright.config.js`
+both read that file on startup:
+
+```
+PW_CHANNEL=chrome
+```
+
+Anything already set in the environment still wins, so `.env` is a default you
+can override per run rather than a lock.
 
 `chrome` and `msedge` are both accepted. Everything else - selectors, actions,
 assertions, the report - is unchanged; only the browser binary differs.

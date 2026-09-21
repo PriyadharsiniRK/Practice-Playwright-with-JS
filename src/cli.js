@@ -11,6 +11,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { loadProjectEnv } from './util/loadEnv.js';
 import { PipelineError } from './errors.js';
 import { parseDocument, selectTestCase } from './parser/index.js';
 import { analyzeTestCase, createProvider } from './analyzer/testCaseAnalyzer.js';
@@ -19,6 +20,8 @@ import { resolveTarget } from './generator/selectorStrategy.js';
 import { DEFAULT_APPLICATION, applicationForTestCase } from './generator/applications/index.js';
 import { REPORT_PATH, runTests, showReport as spawnReportServer } from './executor/testExecutor.js';
 import { logger } from './util/logger.js';
+
+loadProjectEnv();
 
 const DEFAULT_INPUT = path.join('input', 'youtube-tests.xlsx');
 const DEFAULT_OUTPUT_DIR = 'generated';

@@ -1,5 +1,10 @@
 import { defineConfig, devices } from '@playwright/test';
 
+import { loadProjectEnv } from './src/util/loadEnv.js';
+
+// Honour .env here too, so `npx playwright test` behaves like the CLI.
+loadProjectEnv();
+
 /**
  * The suite under test is the `generated/` directory - those files are produced
  * by `npm run generate`, never hand written.
