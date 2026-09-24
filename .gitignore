@@ -1,0 +1,10 @@
+node_modules/
+.env
+
+# Playwright run output. The HTML report and traces are produced per run.
+reports/
+test-results/
+playwright-report/
+blob-report/
+.playwright/
+!reports/.gitkeep
