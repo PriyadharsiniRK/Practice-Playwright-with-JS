@@ -28,10 +28,14 @@ const quotedValue = (text) => text.match(QUOTED_PATTERN)?.slice(1).find((group) 
 
 const NAVIGATE = /^(open|go\s+to|navigate\s+to|launch|browse\s+to|visit)\b/i;
 const FILL = /^(enter|type|input|fill|search\s+for)\b/i;
-const CLICK = /^(click|tap|select|press\s+the\s+\w+\s+button|choose)\b/i;
+// "open" is here as well as in NAVIGATE: a step that says "open" without an
+// address is opening something on the page, and reaches this rule instead.
+const CLICK = /^(click|tap|select|press\s+the\s+\w+\s+button|choose|open)\b/i;
 const PRESS = /\bpress\b\s+(?:the\s+)?["']?(enter|return|escape|tab|arrow\w+|space)["']?/i;
 const ASSERT = /^(verify|check|assert|validate|ensure|confirm|the\s+\w+\s+should)\b/i;
 const BACK = /\b(navigate|go)\s+back\b|\bpress\s+back\b|\bbrowser\s+back\b/i;
+/** "is not displayed" / "is no longer visible" - the negative of ASSERT_VISIBLE. */
+const NEGATED = /\b(is|are|should\s+be)\s+(not|no\s+longer)\s+(displayed|visible|shown|present)\b/i;
 
 /**
  * "title" is ambiguous: the browser tab title, or the title *of an element on
@@ -103,8 +107,12 @@ function interpretAssertion(text, application) {
   // "the video page is displayed" means the URL contains /watch.
   for (const hint of application.assertionHints ?? []) {
     if (hint.match.test(text)) {
-      return { action: hint.action, target: null, value: hint.value };
+      return { action: hint.action, target: hint.target ? target(hint.target) : null, value: hint.value };
     }
+  }
+
+  if (NEGATED.test(text)) {
+    return { action: 'ASSERT_HIDDEN', target: target(text.replace(NEGATED, ' ')), value: null };
   }
 
   if (quoted && /\b(contains?|shows?|displays?|reads?)\b/i.test(text)) {
@@ -118,6 +126,28 @@ function interpretAssertion(text, application) {
   return null;
 }
 
+/**
+ * Resolves an application's own wording for a value that is not in quotes.
+ * `value` on the rule supplies test data the manual test case never states;
+ * otherwise the value is whatever the rule captured as the `value` group.
+ */
+function matchDataEntry(text, application) {
+  for (const rule of application.dataEntry ?? []) {
+    const found = text.match(rule.match);
+    if (!found) continue;
+    const value = rule.value ?? found.groups?.value;
+    if (value) return { target: rule.target, value };
+  }
+  return null;
+}
+
+/** The application's own base URL, when a step names the site but no address. */
+function siteUrl(text, application) {
+  const named = application.nameHints?.some((pattern) => pattern.test(text));
+  if (named && application.baseUrl) return application.baseUrl;
+  return /youtube/i.test(text) ? 'https://www.youtube.com' : null;
+}
+
 export function createHeuristicProvider() {
   return {
     name: 'heuristic',
@@ -126,15 +156,25 @@ export function createHeuristicProvider() {
       const text = rawStep.text.trim();
       const base = { stepNumber: rawStep.stepNumber, originalText: text, expected: rawStep.expected ?? null };
 
-      if (NAVIGATE.test(text)) {
-        const url = text.match(URL_PATTERN)?.[0] ?? (/youtube/i.test(text) ? 'https://www.youtube.com' : null);
-        if (!url) {
-          throw new PipelineError(
-            ErrorCode.TARGET_NOT_UNDERSTOOD,
-            `Step ${rawStep.stepNumber} looks like a navigation but contains no URL: "${text}"`,
-          );
+      // Wording the application declares as meaning something its verb does not
+      // say, e.g. "Add Sauce Labs Backpack to cart" is a click.
+      for (const hint of application.stepHints ?? []) {
+        if (hint.match.test(text)) {
+          return {
+            ...base,
+            action: hint.action,
+            target: hint.target ? target(hint.target) : null,
+            value: hint.value ?? null,
+          };
         }
-        return { ...base, action: 'NAVIGATE', target: null, value: url };
+      }
+
+      if (NAVIGATE.test(text)) {
+        const url = text.match(URL_PATTERN)?.[0] ?? siteUrl(text, application);
+        // "Open the shopping cart" opens an element, not an address. Only treat
+        // this as navigation when there is somewhere to navigate *to*; anything
+        // else falls through to the click rule below.
+        if (url) return { ...base, action: 'NAVIGATE', target: null, value: url };
       }
 
       if (BACK.test(text)) {
@@ -142,7 +182,12 @@ export function createHeuristicProvider() {
       }
 
       if (ASSERT.test(text)) {
-        const assertion = interpretAssertion(text, application);
+        // "Verify Products heading" says what to look at but not what counts as
+        // success; the ExpectedResult column is where the tester wrote that
+        // ("Products heading is displayed"), so it is read as part of the step.
+        const assertion =
+          interpretAssertion(text, application) ??
+          (rawStep.expected ? interpretAssertion(`${text}. ${rawStep.expected}`, application) : null);
         if (!assertion) {
           throw new PipelineError(ErrorCode.UNSUPPORTED_ACTION, 'Unsupported assertion.', {
             hint: [
@@ -161,16 +206,23 @@ export function createHeuristicProvider() {
       }
 
       if (FILL.test(text)) {
-        const value = quotedValue(text);
-        if (!value) {
-          throw new PipelineError(
-            ErrorCode.TARGET_NOT_UNDERSTOOD,
-            `Step ${rawStep.stepNumber} looks like data entry but no quoted value was found: "${text}"`,
-            { hint: 'Write the value in quotes, e.g. Enter "Playwright automation" in the search box.' },
-          );
-        }
         const remainder = text.replace(FILL, '').trim();
-        return { ...base, action: 'FILL', target: target(remainder || 'search box'), value };
+        const value = quotedValue(text);
+        if (value) {
+          return { ...base, action: 'FILL', target: target(remainder || 'search box'), value };
+        }
+
+        // No quotes. The application may still recognise the wording - some
+        // manual test cases write `Enter username standard_user`, and some name
+        // a field whose value is only implied (`Enter first name`).
+        const entry = matchDataEntry(remainder, application);
+        if (entry) return { ...base, action: 'FILL', target: target(entry.target), value: entry.value };
+
+        throw new PipelineError(
+          ErrorCode.TARGET_NOT_UNDERSTOOD,
+          `Step ${rawStep.stepNumber} looks like data entry but no quoted value was found: "${text}"`,
+          { hint: 'Write the value in quotes, e.g. Enter "Playwright automation" in the search box.' },
+        );
       }
 
       const pressMatch = text.match(PRESS);
@@ -180,7 +232,7 @@ export function createHeuristicProvider() {
       }
 
       if (CLICK.test(text)) {
-        const remainder = text.replace(/^(click|tap|select|choose)\s*(on)?\s*/i, '').trim();
+        const remainder = text.replace(/^(click|tap|select|choose|open)\s*(on)?\s*/i, '').trim();
         return { ...base, action: 'CLICK', target: target(remainder), value: null };
       }
 

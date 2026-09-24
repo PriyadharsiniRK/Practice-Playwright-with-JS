@@ -15,9 +15,13 @@ import { loadProjectEnv } from './util/loadEnv.js';
 import { PipelineError } from './errors.js';
 import { parseDocument, selectTestCase } from './parser/index.js';
 import { analyzeTestCase, createProvider } from './analyzer/testCaseAnalyzer.js';
-import { generateSpec } from './generator/playwrightGenerator.js';
+import { assertionless, generateSpec } from './generator/playwrightGenerator.js';
 import { resolveTarget } from './generator/selectorStrategy.js';
-import { DEFAULT_APPLICATION, applicationForTestCase } from './generator/applications/index.js';
+import {
+  DEFAULT_APPLICATION,
+  applicationForDocument,
+  applicationForTestCase,
+} from './generator/applications/index.js';
 import { REPORT_PATH, runTests, showReport as spawnReportServer } from './executor/testExecutor.js';
 import { logger } from './util/logger.js';
 
@@ -124,9 +128,12 @@ async function analyze(rawTestCases, options) {
   }
 
   const analyzed = [];
+  // Test cases that never name the site inherit the one the document names.
+  const documentApplication = applicationForDocument(rawTestCases);
   for (const rawTestCase of rawTestCases) {
     if (rawTestCases.length > 1) logger.info(`  ${rawTestCase.id}`);
-    const application = applicationForTestCase(rawTestCase) ?? DEFAULT_APPLICATION;
+    const application =
+      applicationForTestCase(rawTestCase) ?? documentApplication ?? DEFAULT_APPLICATION;
     const canonical = await analyzeTestCase(rawTestCase, {
       provider,
       application,
@@ -169,6 +176,12 @@ function generate(analyzed, options) {
     const filePath = path.join(options.outDir, fileName);
     fs.writeFileSync(filePath, code, 'utf8');
     logger.step(filePath);
+    if (assertionless(entry.canonical)) {
+      logger.warn(
+        `${entry.canonical.id} states no expected result as a step, so it passes whenever ` +
+          'its steps execute. Add a "Verify ..." step to the manual test case.',
+      );
+    }
     written.push(filePath);
   }
   if (options.offline) {

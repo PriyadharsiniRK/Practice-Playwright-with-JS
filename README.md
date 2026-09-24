@@ -170,6 +170,7 @@ playwright-test-generator/
 │   ├── youtube-tests.xlsx        # sample manual test cases
 │   ├── youtube-tests.docx
 │   ├── orangehrm-tests.xlsx
+│   ├── sample-tests.xlsx
 │   └── orangehrm-tests.docx
 ├── generated/                    # generated specs (committed, never hand edited)
 ├── tests/                        # unit tests for the framework itself
@@ -309,8 +310,8 @@ Both sample documents are committed under `input/` and can be regenerated with
 
 ```js
 Action =
-  | 'NAVIGATE' | 'GO_BACK' | 'CLICK' | 'FILL' | 'PRESS'
-  | 'ASSERT_VISIBLE' | 'ASSERT_TEXT' | 'ASSERT_URL' | 'ASSERT_TITLE'
+  | 'NAVIGATE' | 'GO_BACK' | 'CLICK' | 'FILL' | 'PRESS' | 'SELECT'
+  | 'ASSERT_VISIBLE' | 'ASSERT_HIDDEN' | 'ASSERT_TEXT' | 'ASSERT_URL' | 'ASSERT_TITLE'
 
 TestStep {
   stepNumber: number
@@ -537,10 +538,30 @@ await expect(page).toHaveURL(/\/auth\/login/i);
 OrangeHRM's inputs carry a placeholder but no label or accessible name, and its
 login failure is a text banner — so it reaches the `getByPlaceholder()` and
 `getByText()` tiers of the selector strategy that a search-only site never
-touches. Between the two applications, **all five tiers and all nine canonical
-actions** are exercised.
+touches. Between the applications, **all five tiers and every canonical
+action** are exercised.
 
-### Adding a third application
+### SauceDemo, and what a third application taught the framework
+
+`input/sample-tests.xlsx` covers [saucedemo.com](https://www.saucedemo.com):
+login, cart, sorting and checkout. Its manual test cases are written in a style
+the first two documents never used, and each difference became a rule:
+
+| The document does this | The framework learned to |
+| --- | --- |
+| Names no URL anywhere — just "User is on SauceDemo login page" | Bind by the application name the prose uses, and let a test case that names nothing inherit its document's application |
+| Writes `Enter username standard_user` — no quotes | Let an application declare its own unquoted wording (`dataEntry`) |
+| Writes `Enter first name` — no value at all | Take the value from the application's declared test data, rather than inventing one in the analyzer |
+| States setup as a precondition (`User is logged in`) and writes no step for it | Emit a `Setup:` block that performs it, unless the test case navigates for itself |
+| Says `Open shopping cart` | Treat "open" with no address as a click, not a navigation |
+| Says `Verify backpack is not displayed` | Assert absence (`ASSERT_HIDDEN`), not presence |
+| Says `Verify Products heading` and puts the check in the ExpectedResult column | Read the ExpectedResult column as part of the step |
+| Says `Select Price low to high` | Emit `selectOption()` (`SELECT`), not a click |
+
+None of that is site-specific logic in the pipeline: the rules are generic, and
+what they mean for SauceDemo is declared in `src/generator/applications/saucedemo.js`.
+
+### Adding a fourth application
 
 Write one file under `src/generator/applications/` and register it:
 
@@ -550,14 +571,19 @@ export const myapp = {
   name: 'My App',
   hosts: [/(^|\.)myapp\.com$/i],
   baseUrl: 'https://myapp.com',
-  offlinePort: 4175,
+  offlinePort: 4176,
   targets: [ /* description -> locator */ ],
   assertionHints: [ /* "the basket is displayed" -> ASSERT_URL /basket */ ],
+  // Optional, for documents written like SauceDemo's:
+  nameHints: [ /* bind by name when no step carries a URL */ ],
+  dataEntry: [ /* wording for values that are not in quotes */ ],
+  stepHints: [ /* wording whose verb does not name its action */ ],
+  preconditionHints: [ /* what "user is logged in" means in actions */ ],
 };
 ```
 
 No pipeline code changes. The application is picked automatically from the URL
-in step 1 of the manual test case.
+in step 1 of the manual test case, or from the name its prose uses.
 
 ---
 
@@ -572,6 +598,7 @@ npm run generate-and-test -- TC-YT-001     # the whole pipeline
 npm run report                             # open the HTML report
 npm run demo                               # full pipeline, offline (YouTube)
 npm run demo:orangehrm                     # full pipeline, offline (OrangeHRM)
+npm run demo:saucedemo                     # full pipeline, offline (SauceDemo)
 npm run test:unit                          # unit tests for the framework
 npm run build:inputs                       # regenerate the sample documents
 npm run install:browsers                   # download the matching Chromium

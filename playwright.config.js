@@ -101,6 +101,12 @@ export default defineConfig({
             reuseExistingServer: true,
             timeout: 30_000,
           },
+          {
+            command: 'node mock/saucedemo.js',
+            url: 'http://127.0.0.1:4175/',
+            reuseExistingServer: true,
+            timeout: 30_000,
+          },
         ],
       }
     : {}),

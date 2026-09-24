@@ -19,7 +19,8 @@
     "build:inputs": "node scripts/build-input-files.js && node scripts/build-orangehrm-inputs.js",
     "lint": "node --test \"tests/**/*.test.js\"",
     "test:unit": "node --test \"tests/**/*.test.js\"",
-    "demo:orangehrm": "node src/cli.js generate-and-test --input input/orangehrm-tests.xlsx --offline"
+    "demo:orangehrm": "node src/cli.js generate-and-test --input input/orangehrm-tests.xlsx --offline",
+    "demo:saucedemo": "node src/cli.js generate-and-test --input input/sample-tests.xlsx --offline"
   },
   "keywords": [
     "playwright",

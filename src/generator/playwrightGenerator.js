@@ -114,8 +114,18 @@ function emitStep(step, options) {
       lines.push(step.target ? `await ${locatorFor()}.press(${quote(key)});` : `await page.keyboard.press(${quote(key)});`);
       break;
     }
+    case 'SELECT': {
+      if (step.value == null) {
+        throw new PipelineError(ErrorCode.GENERATION_FAILED, `Step ${step.stepNumber} is a SELECT with no option.`);
+      }
+      lines.push(`await ${locatorFor()}.selectOption({ label: ${quote(step.value)} });`);
+      break;
+    }
     case 'ASSERT_VISIBLE':
       lines.push(`await expect(${locatorFor()}).toBeVisible();`);
+      break;
+    case 'ASSERT_HIDDEN':
+      lines.push(`await expect(${locatorFor()}).toBeHidden();`);
       break;
     case 'ASSERT_TEXT': {
       const expected = step.value ?? step.expected;
@@ -139,6 +149,33 @@ function emitStep(step, options) {
       throw unsupportedAssertion(step);
   }
   return lines;
+}
+
+/** A test case with no assertion passes as long as nothing throws. */
+export const assertionless = (canonical) =>
+  !canonical.steps.some((step) => step.action.startsWith('ASSERT_'));
+
+/**
+ * Turns the preconditions a test case states in prose into steps that reach
+ * that starting point, using the setup each application declares for its own
+ * wording. Falls back to simply opening the application, which is what any test
+ * case with no navigation step of its own needs.
+ */
+function setupSteps(canonical, application) {
+  const preconditions = canonical.preconditions ?? [];
+  for (const hint of application.preconditionHints ?? []) {
+    if (preconditions.some((precondition) => hint.match.test(precondition))) {
+      return hint.steps.map((step, index) => ({
+        stepNumber: index + 1,
+        originalText: step.originalText ?? 'setup',
+        action: step.action,
+        ...(step.target ? { target: { description: step.target } } : {}),
+        ...(step.value != null ? { value: step.value } : {}),
+      }));
+    }
+  }
+  if (!application.baseUrl) return [];
+  return [{ stepNumber: 1, originalText: 'open the application', action: 'NAVIGATE', value: application.baseUrl }];
 }
 
 /**
@@ -169,6 +206,15 @@ export function generateSpec(testCase, options = {}) {
     options.sourceFile ? `//   source    : ${options.sourceFile}` : null,
     options.provider ? `//   analyzer  : ${options.provider}` : null,
     `//   screenshots: ${screenshots ? 'one per step' : 'off'}`,
+    assertionless(canonical)
+      ? '//   WARNING: this test case states no expected result as a step, so the'
+      : null,
+    assertionless(canonical)
+      ? '//            test passes whenever the steps merely execute. Add a'
+      : null,
+    assertionless(canonical)
+      ? '//            "Verify ..." step to the manual test case to check it.'
+      : null,
     '// Re-run `npm run generate` after editing the manual test case.',
     '// ---------------------------------------------------------------------------',
     '',
@@ -179,6 +225,24 @@ export function generateSpec(testCase, options = {}) {
   const body = [];
   if (canonical.preconditions?.length) {
     body.push(...canonical.preconditions.map((precondition) => `${INDENT}// Precondition: ${precondition}`), '');
+  }
+
+  // A manual test case often states "user is logged in" as a precondition and
+  // never writes a step for it, because a human would just do it. An automated
+  // run has to actually do it, so the application's declared setup for that
+  // wording is emitted first - but only when the test case does not navigate
+  // for itself, so a document that spells out its own opening step is untouched.
+  const setup = canonical.steps.some((step) => step.action === 'NAVIGATE')
+    ? []
+    : setupSteps(canonical, application);
+  if (setup.length) {
+    body.push(`${INDENT}await test.step('Setup: reach the starting point of the manual test case', async () => {`);
+    for (const step of setup) {
+      for (const line of emitStep(step, { ...options, application, baseUrl })) {
+        body.push(INDENT + INDENT + line);
+      }
+    }
+    body.push(`${INDENT}});`, '');
   }
 
   // Each manual step becomes a named test.step(), so the HTML report and the
