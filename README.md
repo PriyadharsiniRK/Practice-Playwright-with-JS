@@ -597,6 +597,7 @@ npm test                                   # run every generated spec
 npm run generate-and-test -- TC-YT-001     # the whole pipeline
 npm run report                             # open the HTML report
 npm run demo                               # full pipeline, offline (YouTube)
+npm run demo:youtube                       # the same, named for symmetry
 npm run demo:orangehrm                     # full pipeline, offline (OrangeHRM)
 npm run demo:saucedemo                     # full pipeline, offline (SauceDemo)
 npm run test:unit                          # unit tests for the framework
