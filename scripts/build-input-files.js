@@ -109,6 +109,71 @@ export const TEST_CASES = [
       { text: 'Verify that the search box is visible', expected: 'The search box is shown in the header' },
     ],
   },
+  {
+    id: 'TC-YT-008',
+    title: 'Search results mention a named alternative',
+    preconditions: ['User has internet access.'],
+    steps: [
+      { text: 'Open https://www.youtube.com', expected: 'YouTube homepage is displayed' },
+      { text: 'Enter "Playwright vs Selenium" in the search box', expected: 'Search text is entered' },
+      { text: 'Click the Search button', expected: 'Search is submitted' },
+      { text: 'Verify that search results are displayed', expected: 'A list of matching videos is shown' },
+      { text: 'Verify that the search results list contains "Selenium"', expected: 'A result names Selenium' },
+    ],
+  },
+  {
+    id: 'TC-YT-009',
+    title: 'Going back from a video restores the results list',
+    preconditions: ['User has internet access.'],
+    steps: [
+      { text: 'Open https://www.youtube.com', expected: 'YouTube homepage is displayed' },
+      { text: 'Enter "Playwright automation" in the search box', expected: 'Search text is entered' },
+      { text: 'Press Enter', expected: 'Search is submitted' },
+      { text: 'Click the first search result', expected: 'The video opens' },
+      { text: 'Verify that the video player is visible', expected: 'The player is rendered' },
+      { text: 'Navigate back', expected: 'The browser returns to the search results' },
+      { text: 'Verify that search results are displayed', expected: 'The results list is shown again' },
+    ],
+  },
+  {
+    id: 'TC-YT-010',
+    title: 'The homepage shows no video player',
+    preconditions: ['User has internet access.'],
+    steps: [
+      { text: 'Open https://www.youtube.com', expected: 'YouTube homepage is displayed' },
+      { text: 'Verify that the YouTube logo is visible', expected: 'The logo is shown in the header' },
+      { text: 'Verify that the video player is not visible', expected: 'No player is rendered on the homepage' },
+    ],
+  },
+  {
+    id: 'TC-YT-011',
+    title: 'Refine a search from the results page',
+    preconditions: ['User has internet access.'],
+    steps: [
+      { text: 'Open https://www.youtube.com', expected: 'YouTube homepage is displayed' },
+      { text: 'Enter "Playwright automation" in the search box', expected: 'Search text is entered' },
+      { text: 'Click the Search button', expected: 'Search is submitted' },
+      { text: 'Verify that search results are displayed', expected: 'A list of matching videos is shown' },
+      { text: 'Enter "Playwright vs Selenium" in the search box', expected: 'The query is replaced' },
+      { text: 'Click the Search button', expected: 'The new search is submitted' },
+      { text: 'Verify that the page title contains "Playwright vs Selenium"', expected: 'Tab shows the new query' },
+    ],
+  },
+  {
+    id: 'TC-YT-012',
+    title: 'Open a video then return to the homepage',
+    preconditions: ['User has internet access.'],
+    steps: [
+      { text: 'Open https://www.youtube.com', expected: 'YouTube homepage is displayed' },
+      { text: 'Enter "Playwright testing tutorial" in the search box', expected: 'Search text is entered' },
+      { text: 'Press Enter', expected: 'Search is submitted' },
+      { text: 'Click the first search result', expected: 'The video opens' },
+      { text: 'Verify that the video page is displayed', expected: 'The URL contains /watch' },
+      { text: 'Click the YouTube logo', expected: 'The browser returns to the homepage' },
+      { text: 'Verify that the search box is visible', expected: 'The search box is shown in the header' },
+      { text: 'Verify that the video player is not visible', expected: 'The player is gone' },
+    ],
+  },
 ];
 
 async function buildExcel(filePath) {
