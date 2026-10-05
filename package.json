@@ -14,6 +14,7 @@
     "test": "playwright test",
     "report": "node src/cli.js report",
     "install:browsers": "playwright install chromium",
+    "mocks": "node scripts/start-mocks.js",
     "generate-and-test": "node src/cli.js generate-and-test",
     "demo": "node src/cli.js generate-and-test --offline",
     "demo:youtube": "node src/cli.js generate-and-test --input input/youtube-tests.xlsx --offline",

@@ -603,7 +603,32 @@ npm run demo:saucedemo                     # full pipeline, offline (SauceDemo)
 npm run test:unit                          # unit tests for the framework
 npm run build:inputs                       # regenerate the sample documents
 npm run install:browsers                   # download the matching Chromium
+npm run mocks                              # start the three stand-ins by hand
 ```
+
+### If the run hangs after the last test
+
+Every test reports a result, and then nothing: no `N passed` summary, no
+`Step-by-step report: ...` line, and Ctrl+C is the only way out. Afterwards
+`npm run report` shows the *previous* run.
+
+Those three symptoms are one thing. Reporters write their files in `onEnd`,
+which Playwright calls **after** it has torn the run down - and teardown
+includes stopping the `webServer` stand-ins. A hang there means the tests all
+ran and passed but nothing was ever written, so the report on disk is stale.
+
+Own the stand-ins yourself and that step leaves the run altogether:
+
+```bash
+# terminal 1
+npm run mocks
+
+# terminal 2 - no YT_MOCK, so playwright.config.js configures no webServer
+npx playwright test generated/TC-YT
+```
+
+Playwright now has nothing to shut down, reaches `onEnd`, and writes both
+reports. Ctrl+C in the first terminal stops all three servers.
 
 Every manual step becomes a named `test.step()` in the generated spec, and each
 one attaches a screenshot of the page as it stood when that step finished. The
