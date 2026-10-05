@@ -24,7 +24,17 @@ const ID_LINE = /^test\s*case\s*id\s*[:\-]\s*(.+)$/i;
 const TITLE_LINE = /^title\s*[:\-]\s*(.*)$/i;
 const PRECONDITION_LINE = /^pre[- ]?conditions?\s*[:\-]\s*(.*)$/i;
 const STEPS_HEADING = /^steps?\s*[:\-]?\s*$/i;
-const STEP_LINE = /^(\d+)[.)]\s+(.+)$/;
+/**
+ * A numbered step: "1. Open ...", "1) Open ...", and "1.Open ..." - the space
+ * after the number is optional, because people type it that way and Word's
+ * autoformatting sometimes removes it. A document written like that used to
+ * parse as a test case with no steps at all.
+ *
+ * The lookahead keeps decimal sub-numbering ("1.1 Open ...") from matching as
+ * step 1 with the text "1 Open ...". Sub-numbered steps are still unsupported,
+ * but failing loudly beats silently renumbering someone's test case.
+ */
+const STEP_LINE = /^(\d+)[.)](?!\d)\s*(.+)$/;
 const EXPECTED_LINE = /^expected(?:\s*result)?\s*[:\-]\s*(.+)$/i;
 
 /**
