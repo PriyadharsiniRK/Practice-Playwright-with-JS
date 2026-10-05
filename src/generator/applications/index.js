@@ -10,8 +10,9 @@ import { ErrorCode, PipelineError } from '../../errors.js';
 import { youtube } from './youtube.js';
 import { orangehrm } from './orangehrm.js';
 import { saucedemo } from './saucedemo.js';
+import { carinfo } from './carinfo.js';
 
-export const APPLICATIONS = [youtube, orangehrm, saucedemo];
+export const APPLICATIONS = [youtube, orangehrm, saucedemo, carinfo];
 
 /** The application used when a test case names no recognisable host. */
 export const DEFAULT_APPLICATION = youtube;

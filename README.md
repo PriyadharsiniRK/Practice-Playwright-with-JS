@@ -561,7 +561,28 @@ the first two documents never used, and each difference became a rule:
 None of that is site-specific logic in the pipeline: the rules are generic, and
 what they mean for SauceDemo is declared in `src/generator/applications/saucedemo.js`.
 
-### Adding a fourth application
+### CarInfo, and what a manual test case has to be before it can be automated
+
+The fourth application arrived as a hand-written Word document, and three of its
+steps could not be automated **as written**. That is more instructive than the
+catalog itself, so the reasons are recorded here:
+
+| The document said | Why it cannot be automated | What replaced it |
+| --- | --- | --- |
+| Sign in with Google | OAuth is built to resist automation: bot detection, device verification, markup that changes without notice. The test would be red for reasons unrelated to the application | TC-CI-003 asserts a signed-out visitor is *offered* sign-in |
+| "If it further requests for access, click on Continue" | A conditional step makes the run non-deterministic, and a test that does different things on different runs cannot be asserted about | A deterministic precondition, or an explicit assertion that the dialog is absent |
+| "Enter username as X and password as Y" | Two actions in one step; the canonical model is one action per step | Two steps |
+| A real address and password in the document | Test documents get committed, mailed and pasted into chat. A secret in one is a secret published | Placeholders, and no sign-in at all |
+
+`scripts/build-carinfo-inputs.js` is the reworked document, and the reasoning is
+in its header comment.
+
+The catalog in `src/generator/applications/carinfo.js` also carries an honest
+warning: its selectors follow the site's visible structure but have **not** been
+verified against the live site, only against `mock/carinfo.js`. Passing offline
+proves the pipeline, not the selectors - two different claims.
+
+### Adding a fifth application
 
 Write one file under `src/generator/applications/` and register it:
 
@@ -571,7 +592,7 @@ export const myapp = {
   name: 'My App',
   hosts: [/(^|\.)myapp\.com$/i],
   baseUrl: 'https://myapp.com',
-  offlinePort: 4176,
+  offlinePort: 4177,
   targets: [ /* description -> locator */ ],
   assertionHints: [ /* "the basket is displayed" -> ASSERT_URL /basket */ ],
   // Optional, for documents written like SauceDemo's:
@@ -600,6 +621,7 @@ npm run demo                               # full pipeline, offline (YouTube)
 npm run demo:youtube                       # the same, named for symmetry
 npm run demo:orangehrm                     # full pipeline, offline (OrangeHRM)
 npm run demo:saucedemo                     # full pipeline, offline (SauceDemo)
+npm run demo:carinfo                       # full pipeline, offline (CarInfo)
 npm run test:unit                          # unit tests for the framework
 npm run build:inputs                       # regenerate the sample documents
 npm run install:browsers                   # download the matching Chromium
@@ -781,7 +803,8 @@ hand-written one.
 ## 16. Offline mode
 
 `--offline` points the generated tests at the bundled stand-ins — `mock/server.js`
-for YouTube (port 4173) and `mock/orangehrm.js` for OrangeHRM (port 4174), each
+for YouTube (port 4173), `mock/orangehrm.js` for OrangeHRM (4174),
+`mock/saucedemo.js` for SauceDemo (4175) and `mock/carinfo.js` for CarInfo (4176), each
 a small server reproducing only the accessibility hooks the tests use — the "Search"
 combobox and button, `ytd-search`, `ytd-video-renderer`, the "YouTube Home"
 logo link and `#movie_player`.

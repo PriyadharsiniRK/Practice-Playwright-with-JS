@@ -107,6 +107,12 @@ export default defineConfig({
             reuseExistingServer: true,
             timeout: 30_000,
           },
+          {
+            command: 'node mock/carinfo.js',
+            url: 'http://127.0.0.1:4176/',
+            reuseExistingServer: true,
+            timeout: 30_000,
+          },
         ],
       }
     : {}),

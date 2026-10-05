@@ -27,6 +27,7 @@ const SERVERS = [
   { file: 'mock/server.js', name: 'YouTube', port: 4173 },
   { file: 'mock/orangehrm.js', name: 'OrangeHRM', port: 4174 },
   { file: 'mock/saucedemo.js', name: 'SauceDemo', port: 4175 },
+  { file: 'mock/carinfo.js', name: 'CarInfo', port: 4176 },
 ];
 
 const children = SERVERS.map(({ file, name, port }) => {
