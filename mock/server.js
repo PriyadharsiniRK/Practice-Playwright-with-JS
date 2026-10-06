@@ -45,6 +45,13 @@ const STYLE = `
   main { padding: 16px; max-width: 900px; }
   #movie_player { width: 100%; aspect-ratio: 16 / 9; background: #000; color: #fff;
                   display: flex; align-items: center; justify-content: center; }
+  .player-controls, .owner-actions { display: flex; gap: 8px; align-items: center; margin: 10px 0; }
+  .player-controls button, .owner-actions button { padding: 6px 14px; border: 1px solid #ccc;
+                  border-radius: 18px; background: #f2f2f2; cursor: pointer; }
+  #channel-name { font-weight: 600; color: inherit; }
+  #comments { margin-top: 20px; border-top: 1px solid #eee; padding-top: 12px; }
+  .no-results { color: #606060; font-style: italic; }
+  body.fullscreen #movie_player { aspect-ratio: auto; height: 80vh; }
 `;
 
 const chrome = (query = '') => `
@@ -89,12 +96,15 @@ function resultsPage(query) {
   const matches = VIDEOS.filter((video) =>
     query ? video.title.toLowerCase().includes(query.toLowerCase().split(' ')[0]) : true,
   );
-  const shown = matches.length > 0 ? matches : VIDEOS;
   return page(
     `${query} - YouTube`,
     `<ytd-search>
-       <p>${shown.length} results for "${escapeHtml(query)}"</p>
-       ${shown.map(renderResult).join('\n')}
+       <p>${matches.length} results for "${escapeHtml(query)}"</p>
+       ${
+         matches.length
+           ? matches.map(renderResult).join('\n')
+           : '<p class="no-results">No results found. Try different keywords.</p>'
+       }
      </ytd-search>`,
     query,
   );
@@ -106,9 +116,59 @@ function watchPage(videoId) {
     `${video.title} - YouTube`,
     `<ytd-watch-flexy>
        <div id="movie_player">Now playing</div>
+       <div class="player-controls">
+         <button id="play-pause" aria-label="Play">Play</button>
+         <button id="mute" aria-label="Mute">Mute</button>
+         <button id="fullscreen" aria-label="Full screen">Full screen</button>
+         <input id="volume" type="range" min="0" max="100" value="100" aria-label="Volume" />
+       </div>
        <h1 class="ytd-watch-metadata">${escapeHtml(video.title)}</h1>
-       <div>${escapeHtml(video.channel)}</div>
+       <a id="channel-name" href="/channel/${escapeHtml(video.channel)}">${escapeHtml(video.channel)}</a>
+       <div class="owner-actions">
+         <button id="subscribe-button" aria-label="Subscribe">Subscribe</button>
+         <button id="like-button" aria-label="Like">Like</button>
+       </div>
+       <div id="description">
+         <p id="description-text">A short course on automating the browser.</p>
+         <button id="expand" aria-label="Show more">Show more</button>
+         <p id="description-more" hidden>Chapters, links and credits.</p>
+       </div>
+       <div id="comments">
+         <h2>Comments</h2>
+         <p class="comment">Great explanation, thanks!</p>
+       </div>
+       <p id="signin-prompt" hidden>Sign in to like this video.</p>
+       <script>
+         const byId = (id) => document.getElementById(id);
+         byId('play-pause').onclick = (event) => {
+           const playing = event.target.textContent === 'Pause';
+           event.target.textContent = playing ? 'Play' : 'Pause';
+           event.target.setAttribute('aria-label', playing ? 'Play' : 'Pause');
+         };
+         byId('mute').onclick = (event) => {
+           const muted = event.target.textContent === 'Unmute';
+           event.target.textContent = muted ? 'Mute' : 'Unmute';
+           event.target.setAttribute('aria-label', muted ? 'Mute' : 'Unmute');
+         };
+         byId('fullscreen').onclick = () => document.body.classList.toggle('fullscreen');
+         byId('expand').onclick = () => { byId('description-more').hidden = false; };
+         // Signed out, as every generated test is: liking or subscribing asks
+         // you to sign in rather than succeeding.
+         for (const id of ['like-button', 'subscribe-button']) {
+           byId(id).onclick = () => { byId('signin-prompt').hidden = false; };
+         }
+       </script>
      </ytd-watch-flexy>`,
+  );
+}
+
+function channelPage(name) {
+  return page(
+    `${name} - YouTube`,
+    `<ytd-browse>
+       <h1 class="channel-title">${escapeHtml(name)}</h1>
+       <p>Videos from this channel.</p>
+     </ytd-browse>`,
   );
 }
 
@@ -118,7 +178,9 @@ const server = http.createServer((request, response) => {
 
   if (url.pathname === '/results') body = resultsPage(url.searchParams.get('search_query') ?? '');
   else if (url.pathname === '/watch') body = watchPage(url.searchParams.get('v'));
-  else if (url.pathname === '/') body = homePage();
+  else if (url.pathname.startsWith('/channel/')) {
+    body = channelPage(decodeURIComponent(url.pathname.slice('/channel/'.length)));
+  } else if (url.pathname === '/') body = homePage();
 
   if (body == null) {
     response.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });

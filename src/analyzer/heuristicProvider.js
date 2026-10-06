@@ -34,6 +34,9 @@ const CLICK = /^(click|tap|select|press\s+the\s+\w+\s+button|choose|open)\b/i;
 const PRESS = /\bpress\b\s+(?:the\s+)?["']?(enter|return|escape|tab|arrow\w+|space)["']?/i;
 const ASSERT = /^(verify|check|assert|validate|ensure|confirm|the\s+\w+\s+should)\b/i;
 const BACK = /\b(navigate|go)\s+back\b|\bpress\s+back\b|\bbrowser\s+back\b/i;
+const FORWARD = /\b(navigate|go)\s+forward\b|\bpress\s+forward\b|\bbrowser\s+forward\b/i;
+/** "Clear the search box" - emptying a field is not the same as filling it. */
+const CLEAR = /^(clear|empty|erase)\b/i;
 /**
  * Verbs that start an instruction. Used to spot a step that bundles several
  * actions - see `actionClauses`.
@@ -226,8 +229,16 @@ export function createHeuristicProvider() {
         if (url) return { ...base, action: 'NAVIGATE', target: null, value: url };
       }
 
+      if (FORWARD.test(text)) {
+        return { ...base, action: 'GO_FORWARD', target: null, value: null };
+      }
+
       if (BACK.test(text)) {
         return { ...base, action: 'GO_BACK', target: null, value: null };
+      }
+
+      if (CLEAR.test(text)) {
+        return { ...base, action: 'CLEAR', target: target(text.replace(CLEAR, ' ')), value: null };
       }
 
       if (ASSERT.test(text)) {

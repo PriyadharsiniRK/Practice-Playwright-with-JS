@@ -310,7 +310,7 @@ Both sample documents are committed under `input/` and can be regenerated with
 
 ```js
 Action =
-  | 'NAVIGATE' | 'GO_BACK' | 'CLICK' | 'FILL' | 'PRESS' | 'SELECT'
+  | 'NAVIGATE' | 'GO_BACK' | 'GO_FORWARD' | 'CLICK' | 'FILL' | 'CLEAR' | 'PRESS' | 'SELECT'
   | 'ASSERT_VISIBLE' | 'ASSERT_HIDDEN' | 'ASSERT_TEXT' | 'ASSERT_URL' | 'ASSERT_TITLE'
 
 TestStep {

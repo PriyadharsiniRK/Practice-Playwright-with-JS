@@ -71,10 +71,14 @@ test('the most specific catalog entry wins', () => {
 });
 
 test('an unknown element with a role and a name falls back to getByRole', () => {
-  const resolved = resolveTarget({ description: 'subscribe button', role: 'button', name: 'subscribe' });
+  // "share button" is deliberately not in any catalog. This used to say
+  // "subscribe button", which became a real YouTube target when the player
+  // controls were added - the example has to stay genuinely unknown for the
+  // fallback to be what is under test.
+  const resolved = resolveTarget({ description: 'share button', role: 'button', name: 'share' });
   assert.equal(resolved.strategy, 'role');
   assert.equal(resolved.source, 'analyzer');
-  assert.equal(emitLocator(resolved.spec), "page.getByRole('button', { name: /subscribe/i })");
+  assert.equal(emitLocator(resolved.spec), "page.getByRole('button', { name: /share/i })");
 });
 
 test('an unresolvable element fails loudly instead of guessing a selector', () => {

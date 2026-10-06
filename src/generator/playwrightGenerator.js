@@ -99,6 +99,12 @@ function emitStep(step, options) {
     case 'GO_BACK':
       lines.push('await page.goBack();');
       break;
+    case 'GO_FORWARD':
+      lines.push('await page.goForward();');
+      break;
+    case 'CLEAR':
+      lines.push(`await ${locatorFor()}.clear();`);
+      break;
     case 'CLICK':
       lines.push(`await ${locatorFor()}.click();`);
       break;

@@ -13,8 +13,10 @@ import { z } from 'zod';
 export const ACTIONS = [
   'NAVIGATE',
   'GO_BACK',
+  'GO_FORWARD',
   'CLICK',
   'FILL',
+  'CLEAR',
   'PRESS',
   'SELECT',
   'ASSERT_VISIBLE',
