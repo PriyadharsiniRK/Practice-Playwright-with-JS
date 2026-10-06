@@ -772,6 +772,7 @@ failure carries a stable code and a non-zero exit status.
 | --- | --- |
 | `INVALID_TEST_CASE` | the document is malformed, or the requested id does not exist |
 | `UNSUPPORTED_ACTION` | a step cannot be expressed with the supported actions |
+| `MULTIPLE_ACTIONS_IN_STEP` | one step bundles several instructions; the error lists the split |
 | `TARGET_NOT_UNDERSTOOD` | no locator can be resolved for the element |
 | `AMBIGUOUS_TARGET` | the description matches several known elements equally well |
 | `INVALID_LLM_RESPONSE` | the model's output fails schema validation twice |

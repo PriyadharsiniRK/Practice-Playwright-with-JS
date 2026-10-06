@@ -13,7 +13,7 @@
  * of every generated spec file.
  */
 
-import { ErrorCode, PipelineError } from '../errors.js';
+import { ErrorCode, PipelineError, fail } from '../errors.js';
 import { DEFAULT_APPLICATION } from '../generator/applications/index.js';
 
 const URL_PATTERN = /\bhttps?:\/\/[^\s"'<>]+/i;
@@ -34,6 +34,33 @@ const CLICK = /^(click|tap|select|press\s+the\s+\w+\s+button|choose|open)\b/i;
 const PRESS = /\bpress\b\s+(?:the\s+)?["']?(enter|return|escape|tab|arrow\w+|space)["']?/i;
 const ASSERT = /^(verify|check|assert|validate|ensure|confirm|the\s+\w+\s+should)\b/i;
 const BACK = /\b(navigate|go)\s+back\b|\bpress\s+back\b|\bbrowser\s+back\b/i;
+/**
+ * Verbs that start an instruction. Used to spot a step that bundles several
+ * actions - see `actionClauses`.
+ */
+const ACTION_VERB =
+  /^(open|go\s+to|navigate|launch|browse|visit|enter|type|input|fill|search|click|tap|select|choose|press|submit|verify|check|assert|validate|ensure|confirm|clear|scroll|hover|close|play|pause)\b/i;
+
+/**
+ * The clauses of a step that each read like an instruction.
+ *
+ * "Open YouTube, enter a search term, submit" is three actions written as one
+ * step. The canonical model carries one action per step, so a step like that
+ * used to be read as its first clause and the rest silently dropped - the
+ * generated test did less than the test case said, which is exactly the
+ * "silently generate incorrect automation" this project exists to avoid.
+ *
+ * Quoted values are blanked first: `Enter "Playwright and Selenium" in the
+ * search box` is one action, and the "and" inside the quotes must not split it.
+ */
+export function actionClauses(text) {
+  const withoutValues = text.replace(/"[^"]*"|“[^”]*”|'[^']*'|‘[^’]*’/g, '""');
+  return withoutValues
+    .split(/\s*,\s*|\s+and\s+then\s+|\s+then\s+|\s+and\s+/i)
+    .map((clause) => clause.trim())
+    .filter((clause) => ACTION_VERB.test(clause));
+}
+
 /** "is not displayed" / "is no longer visible" - the negative of ASSERT_VISIBLE. */
 const NEGATED = /\b(is|are|should\s+be)\s+(not|no\s+longer)\s+(displayed|visible|shown|present)\b/i;
 
@@ -155,6 +182,28 @@ export function createHeuristicProvider() {
       const application = context.application ?? DEFAULT_APPLICATION;
       const text = rawStep.text.trim();
       const base = { stepNumber: rawStep.stepNumber, originalText: text, expected: rawStep.expected ?? null };
+
+      // A step that bundles several instructions cannot be carried by a model
+      // that holds one action per step. Refusing is the point: reading only the
+      // first clause would generate a test that does less than the test case
+      // says, while still reporting the full wording in its step title.
+      const clauses = actionClauses(text);
+      if (clauses.length > 1 && !(application.stepHints ?? []).some((hint) => hint.match.test(text))) {
+        fail(
+          ErrorCode.MULTIPLE_ACTIONS_IN_STEP,
+          `Step ${rawStep.stepNumber} describes ${clauses.length} actions: "${text}"`,
+          {
+            hint: [
+              'A step carries one action, so that a failure names the step that failed',
+              'and the report can show the page at that moment. Split it:',
+              '',
+              ...clauses.map((clause, index) => `  ${index + 1}. ${clause}`),
+              '',
+              'Each becomes its own row with the same TestCaseID.',
+            ].join('\n'),
+          },
+        );
+      }
 
       // Wording the application declares as meaning something its verb does not
       // say, e.g. "Add Sauce Labs Backpack to cart" is a click.
