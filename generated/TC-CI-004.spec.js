@@ -24,8 +24,8 @@ test('TC-CI-004 - An unknown registration number returns no vehicle', async ({ p
     await testInfo.attach('Step 2', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 3: Click the Search button', async () => {
-    await page.getByRole('button', { name: /^search$/i }).click();
+  await test.step('Step 3: Press Enter', async () => {
+    await page.keyboard.press('Enter');
     await testInfo.attach('Step 3', { body: await page.screenshot(), contentType: 'image/png' });
   });
 

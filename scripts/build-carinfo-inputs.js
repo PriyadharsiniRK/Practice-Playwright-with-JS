@@ -43,10 +43,11 @@ export const TEST_CASES = [
     steps: [
       { text: 'Open https://car.info', expected: 'The car.info homepage is displayed' },
       { text: 'Enter "KFG40L" in the registration number box', expected: 'The plate is entered' },
-      { text: 'Click the Search button', expected: 'The lookup is submitted' },
+      { text: 'Press Enter', expected: 'The lookup is submitted' },
       { text: 'Verify that the vehicle page is displayed', expected: 'The URL contains /search' },
       { text: 'Verify that vehicle details are displayed', expected: 'The details card is shown' },
       { text: 'Verify that the vehicle title contains "KFG40L"', expected: 'The heading names the plate' },
+      { text: 'Verify that the vehicle title contains "XC40"', expected: 'The heading names the model' },
     ],
   },
   {
@@ -77,7 +78,7 @@ export const TEST_CASES = [
     steps: [
       { text: 'Open https://car.info', expected: 'The car.info homepage is displayed' },
       { text: 'Enter "ZZZ999" in the registration number box', expected: 'The plate is entered' },
-      { text: 'Click the Search button', expected: 'The lookup is submitted' },
+      { text: 'Press Enter', expected: 'The lookup is submitted' },
       { text: 'Verify that search results are displayed', expected: 'The results area is shown' },
       { text: 'Verify that the vehicle details are not displayed', expected: 'No details card is rendered' },
     ],

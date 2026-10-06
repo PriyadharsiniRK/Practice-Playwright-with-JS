@@ -49,13 +49,6 @@ export const carinfo = {
       spec: { kind: 'label', text: { source: 'registration number', flags: 'i' } },
     },
     {
-      id: 'carinfo.searchButton',
-      description: 'Search button',
-      match: [/search\s*(button|icon)/i, /^search$/i, /\bbutton\b.*\bsearch\b/i],
-      roleHints: ['button'],
-      spec: { kind: 'role', role: 'button', name: { source: '^search$', flags: 'i' } },
-    },
-    {
       id: 'carinfo.logo',
       description: 'car.info logo',
       match: [/car\s*\.?\s*info\s*logo/i, /\blogo\b/i],
@@ -98,7 +91,9 @@ export const carinfo = {
     {
       match: /\bvehicle\s+(page|result\s+page)\s+(is\s+)?(displayed|shown|loaded|open)/i,
       action: 'ASSERT_URL',
-      value: '/search',
+      // car.info searches with a query parameter on the root path, not a
+      // separate results path: car.info/?s=KFG40L
+      value: '?s=',
     },
     {
       match: /\b(home\s*page|homepage)\s+(is\s+)?(displayed|shown|loaded)/i,

@@ -24,13 +24,13 @@ test('TC-CI-001 - Look up a vehicle by registration number', async ({ page }, te
     await testInfo.attach('Step 2', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 3: Click the Search button', async () => {
-    await page.getByRole('button', { name: /^search$/i }).click();
+  await test.step('Step 3: Press Enter', async () => {
+    await page.keyboard.press('Enter');
     await testInfo.attach('Step 3', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
   await test.step('Step 4: Verify that the vehicle page is displayed', async () => {
-    await expect(page).toHaveURL(/\/search/i);
+    await expect(page).toHaveURL(/\?s=/i);
     await testInfo.attach('Step 4', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
@@ -42,5 +42,10 @@ test('TC-CI-001 - Look up a vehicle by registration number', async ({ page }, te
   await test.step('Step 6: Verify that the vehicle title contains "KFG40L"', async () => {
     await expect(page.locator('h1.vehicle-heading')).toContainText(/KFG40L/i);
     await testInfo.attach('Step 6', { body: await page.screenshot(), contentType: 'image/png' });
+  });
+
+  await test.step('Step 7: Verify that the vehicle title contains "XC40"', async () => {
+    await expect(page.locator('h1.vehicle-heading')).toContainText(/XC40/i);
+    await testInfo.attach('Step 7', { body: await page.screenshot(), contentType: 'image/png' });
   });
 });

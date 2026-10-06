@@ -18,10 +18,21 @@ import http from 'node:http';
 const PORT = Number(process.env.CARINFO_PORT ?? 4176);
 const HOST = process.env.MOCK_HOST ?? '127.0.0.1';
 
-/** Keyed by registration number, as the real site is. */
+/**
+ * Keyed by registration number, as the real site is.
+ *
+ * KFG40L is a real Swedish plate and the real site reports it as a Volvo XC40;
+ * that is what the stand-in says too. An earlier version invented a different
+ * vehicle, which made the step report contradict the live site and turned a
+ * demo into a puzzle. A stand-in may be small, but where it overlaps reality it
+ * should agree with it - the make and model here come from the live page.
+ *
+ * Nothing beyond make and model is listed, because nothing beyond make and
+ * model has been observed. Inventing specifications would reintroduce exactly
+ * the problem this comment exists to record.
+ */
 const VEHICLES = {
-  KFG40L: { make: 'Volvo', model: 'V70 2.4 D5', year: 2008, fuel: 'Diesel' },
-  ABC123: { make: 'Saab', model: '9-3 Aero', year: 2004, fuel: 'Petrol' },
+  KFG40L: { make: 'Volvo', model: 'XC40' },
 };
 
 const escapeHtml = (value) =>
@@ -53,10 +64,9 @@ const STYLE = `
 const chrome = (query = '') => `
   <header>
     <a id="logo" href="/" aria-label="car.info home">car.info</a>
-    <form action="/search" method="get" role="search">
-      <input type="text" name="q" aria-label="Registration number"
+    <form action="/" method="get" role="search">
+      <input type="text" name="s" aria-label="Registration number"
              placeholder="Registration number" autocomplete="off" value="${escapeHtml(query)}" />
-      <button type="submit" aria-label="Search">Search</button>
     </form>
     <a class="login" href="/login">Log in</a>
   </header>
@@ -93,15 +103,10 @@ function searchPage(rawQuery) {
     `${plate} ${vehicle.make} ${vehicle.model} - car.info`,
     `<div class="vehicle-results">
        <div class="vehicle-card">
-         <h1 class="vehicle-heading">${escapeHtml(plate)} - ${escapeHtml(vehicle.make)} ${escapeHtml(
+         <h1 class="vehicle-heading">${escapeHtml(plate)} ${escapeHtml(vehicle.make)} ${escapeHtml(
            vehicle.model,
          )}</h1>
-         <dl>
-           <dt>Make</dt><dd>${escapeHtml(vehicle.make)}</dd>
-           <dt>Model</dt><dd>${escapeHtml(vehicle.model)}</dd>
-           <dt>Model year</dt><dd>${vehicle.year}</dd>
-           <dt>Fuel</dt><dd>${escapeHtml(vehicle.fuel)}</dd>
-         </dl>
+         <p class="limited">You currently have a limited use of Car.info.</p>
        </div>
      </div>`,
     plate,
@@ -120,7 +125,9 @@ const server = http.createServer((request, response) => {
   const url = new URL(request.url, `http://${HOST}:${PORT}`);
   let body;
 
-  if (url.pathname === '/search') body = searchPage(url.searchParams.get('q'));
+  // The real site searches with a query parameter on the root path
+  // (car.info/?s=KFG40L) rather than a separate results path.
+  if (url.pathname === '/' && url.searchParams.has('s')) body = searchPage(url.searchParams.get('s'));
   else if (url.pathname === '/login') body = loginPage();
   else if (url.pathname === '/') body = homePage();
 

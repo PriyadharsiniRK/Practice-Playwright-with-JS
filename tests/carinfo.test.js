@@ -66,7 +66,8 @@ test('"the vehicle page is displayed" becomes a URL assertion', async () => {
     rawCase({ steps: [{ stepNumber: 1, text: 'Verify that the vehicle page is displayed' }] }),
   );
   assert.equal(canonical.steps[0].action, 'ASSERT_URL');
-  assert.equal(canonical.steps[0].value, '/search');
+  // car.info searches with ?s= on the root path, not a separate results path.
+  assert.equal(canonical.steps[0].value, '?s=');
 });
 
 test('"vehicle details are displayed" resolves to the details card', async () => {
