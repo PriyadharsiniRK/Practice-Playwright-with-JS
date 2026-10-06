@@ -37,14 +37,37 @@ const OUTPUT_DIR = 'input';
 /** The manual test cases, as a tester would have written them. */
 export const TEST_CASES = [
   {
+    // Verbatim, at the author's request. Several of these steps cannot be
+    // automated as written - see the header comment - and the run says so
+    // rather than guessing. TC-CI-005 is the same journey rewritten into steps
+    // the pipeline can express, kept alongside for comparison.
     id: 'TC-CI-001',
+    title: 'Open CarInfo site and create account',
+    preconditions: ['User has internet access'],
+    steps: [
+      { text: 'Open https://car.info/' },
+      { text: 'click on login' },
+      { text: 'Select Google' },
+      { text: 'Enter username as karthikkmdec89@gmail.com' },
+      { text: 'and password as Test@123' },
+      { text: 'further requests for access, click on Continue' },
+      {
+        text:
+          'requests to Approve term of use , then select Confirm the terms of use ' +
+          'and for user selection select Regular user and agree',
+      },
+      { text: 'In the search tab in the top, type KFG40L and search' },
+    ],
+  },
+  {
+    id: 'TC-CI-005',
     title: 'Look up a vehicle by registration number',
     preconditions: ['User has internet access.'],
     steps: [
       { text: 'Open https://car.info', expected: 'The car.info homepage is displayed' },
       { text: 'Enter "KFG40L" in the registration number box', expected: 'The plate is entered' },
       { text: 'Press Enter', expected: 'The lookup is submitted' },
-      { text: 'Verify that the vehicle page is displayed', expected: 'The URL contains /search' },
+      { text: 'Verify that the vehicle page is displayed', expected: 'The URL contains ?s=' },
       { text: 'Verify that vehicle details are displayed', expected: 'The details card is shown' },
       { text: 'Verify that the vehicle title contains "KFG40L"', expected: 'The heading names the plate' },
       { text: 'Verify that the vehicle title contains "XC40"', expected: 'The heading names the model' },
