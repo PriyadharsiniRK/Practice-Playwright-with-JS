@@ -106,7 +106,11 @@ function emitStep(step, options) {
       if (step.value == null) {
         throw new PipelineError(ErrorCode.GENERATION_FAILED, `Step ${step.stepNumber} is a FILL with no value.`);
       }
-      lines.push(`await ${locatorFor()}.fill(${quote(step.value)});`);
+      const secret = String(step.value).match(SECRET_PLACEHOLDER);
+      const value = secret
+        ? `fromEnv(${quote(envNameFor(secret[1], options.application))})`
+        : quote(step.value);
+      lines.push(`await ${locatorFor()}.fill(${value});`);
       break;
     }
     case 'PRESS': {
@@ -149,6 +153,35 @@ function emitStep(step, options) {
       throw unsupportedAssertion(step);
   }
   return lines;
+}
+
+/**
+ * A manual step may name a value instead of stating it: `<password>` rather
+ * than the password itself. Credentials do not belong in a test case document,
+ * which gets committed, mailed and pasted into chat.
+ *
+ * The placeholder is NOT resolved here. Substituting at generation time would
+ * only move the secret from one committed file to another - generated/ is in
+ * version control too. Instead the generated spec reads it from the environment
+ * when it runs, so the value exists only in .env, which is gitignored.
+ */
+const SECRET_PLACEHOLDER = /^<([A-Za-z][A-Za-z0-9_]*)>$/;
+
+/** `<password>` in a CarInfo test case -> the CARINFO_PASSWORD variable. */
+const envNameFor = (name, application) =>
+  `${String(application.id).toUpperCase().replace(/[^A-Z0-9]+/g, '_')}_${name.toUpperCase()}`;
+
+/** The env variables a canonical test case needs, in the order it needs them. */
+export function secretsRequiredBy(canonical, application) {
+  const names = [];
+  for (const step of canonical.steps ?? []) {
+    const match = typeof step.value === 'string' && step.value.match(SECRET_PLACEHOLDER);
+    if (match) {
+      const envName = envNameFor(match[1], application);
+      if (!names.includes(envName)) names.push(envName);
+    }
+  }
+  return names;
 }
 
 /** A test case with no assertion passes as long as nothing throws. */
@@ -196,6 +229,7 @@ export function generateSpec(testCase, options = {}) {
   // `--offline` swaps only the origin; every selector and assertion is unchanged.
   const baseUrl = options.offline ? `http://127.0.0.1:${application.offlinePort}` : options.baseUrl;
   const screenshots = options.screenshots !== false;
+  const secrets = secretsRequiredBy(canonical, application);
 
   const header = [
     '// ---------------------------------------------------------------------------',
@@ -215,11 +249,36 @@ export function generateSpec(testCase, options = {}) {
     assertionless(canonical)
       ? '//            "Verify ..." step to the manual test case to check it.'
       : null,
+    secrets.length ? `//   secrets   : ${secrets.join(', ')} (from .env - never stored here)` : null,
     '// Re-run `npm run generate` after editing the manual test case.',
     '// ---------------------------------------------------------------------------',
     '',
     `import { test, expect } from '@playwright/test';`,
     '',
+    // Emitted only for test cases that name a secret, so every other generated
+    // file stays as plain as it was.
+    ...(secrets.length
+      ? [
+          '/**',
+          ' * Reads a credential the manual test case referred to by name.',
+          ' *',
+          ' * The value is never written into this file: a generated spec is committed',
+          ' * like any other source. It lives in .env, which is not. Missing means a',
+          ' * loud failure rather than a blank field and a confusing assertion later.',
+          ' */',
+          'const fromEnv = (name) => {',
+          '  const value = process.env[name];',
+          '  if (!value) {',
+          '    throw new Error(',
+          '      `${name} is not set. Add it to .env (see .env.example) - the manual test ` +',
+          "      `case refers to this value by name rather than stating it.`,",
+          '    );',
+          '  }',
+          '  return value;',
+          '};',
+          '',
+        ]
+      : []),
   ].filter((line) => line !== null);
 
   const body = [];

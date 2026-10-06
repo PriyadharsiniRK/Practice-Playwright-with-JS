@@ -48,8 +48,8 @@ export const TEST_CASES = [
       { text: 'Open https://car.info/' },
       { text: 'click on login' },
       { text: 'Select Google' },
-      { text: 'Enter username as karthikkmdec89@gmail.com' },
-      { text: 'and password as Test@123' },
+      { text: 'Enter username as "<username>"' },
+      { text: 'and password as "<password>"' },
       { text: 'further requests for access, click on Continue' },
       {
         text:

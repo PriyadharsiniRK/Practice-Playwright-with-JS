@@ -117,3 +117,38 @@ test('offline mode swaps only the origin, onto CarInfo’s own port', async () =
   assert.match(live, /page\.goto\('https:\/\/car\.info'\)/);
   assert.match(offline, /page\.goto\('http:\/\/127\.0\.0\.1:4176\/'\)/);
 });
+
+test('a credential named in a step is read from the environment, never written into the spec', async () => {
+  const canonical = await analyze(
+    rawCase({
+      steps: [
+        { stepNumber: 1, text: 'Enter "<username>" in the registration number box' },
+        { stepNumber: 2, text: 'Enter "<password>" in the registration number box' },
+      ],
+    }),
+  );
+
+  const { code } = generateSpec({ ...canonical, application: 'carinfo' });
+
+  assert.match(code, /fill\(fromEnv\('CARINFO_USERNAME'\)\)/);
+  assert.match(code, /fill\(fromEnv\('CARINFO_PASSWORD'\)\)/);
+  // The placeholder may appear in the step title - that is the manual wording,
+  // and the report should show it. What must never appear is the placeholder
+  // being filled as if it were the value.
+  assert.doesNotMatch(code, /fill\('<password>'\)/);
+  assert.match(code, /Step 2: Enter "<password>"/);
+  // The helper is emitted, and fails loudly rather than filling a blank.
+  assert.match(code, /const fromEnv = \(name\) =>/);
+  assert.match(code, /is not set\. Add it to \.env/);
+  assert.match(code, /secrets {3}: CARINFO_USERNAME, CARINFO_PASSWORD/);
+});
+
+test('a test case naming no credential gets no helper', async () => {
+  const canonical = await analyze(
+    rawCase({ steps: [{ stepNumber: 1, text: 'Enter "KFG40L" in the registration number box' }] }),
+  );
+  const { code } = generateSpec({ ...canonical, application: 'carinfo' });
+
+  assert.match(code, /\.fill\('KFG40L'\)/);
+  assert.doesNotMatch(code, /fromEnv/);
+});

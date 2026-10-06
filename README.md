@@ -582,6 +582,34 @@ warning: its selectors follow the site's visible structure but have **not** been
 verified against the live site, only against `mock/carinfo.js`. Passing offline
 proves the pipeline, not the selectors - two different claims.
 
+### Credentials a test case refers to but does not state
+
+A manual test case that needs a login writes the value by name:
+
+```
+4. Enter username as "<username>"
+5. and password as "<password>"
+```
+
+`<name>` in a CarInfo test case becomes `CARINFO_<NAME>` - the variable is
+`<APPLICATION>_<NAME>`, both upper-cased - and the generated spec reads it when
+it runs:
+
+```js
+await page.getByLabel(/username/i).fill(fromEnv('CARINFO_USERNAME'));
+```
+
+The placeholder is deliberately **not** resolved at generation time.
+Substituting then would only move the secret from one committed file to
+another, because `generated/` is in version control too. Resolving at run time
+means the value exists only in `.env`, which is gitignored. A missing variable
+throws by name rather than filling a blank field and failing later at a
+confusing assertion.
+
+The manual wording still appears verbatim in the step title and the report, so
+a reviewer sees `Enter username as "<username>"` - which is what the document
+says.
+
 ### Adding a fifth application
 
 Write one file under `src/generator/applications/` and register it:
