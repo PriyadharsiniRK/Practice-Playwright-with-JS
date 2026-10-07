@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------------
 // GENERATED FILE - do not edit by hand.
 // Produced by playwright-test-generator from a manual test case.
-//   test case : TC-EB-001
+//   test case : TC-TNEB-001
 //   application: TNEB
 //   source    : input/tneb-tests.docx
 //   analyzer  : heuristic
@@ -11,7 +11,7 @@
 
 import { test, expect } from '@playwright/test';
 
-test('TC-EB-001 - Download an e-Invoice', async ({ page }, testInfo) => {
+test('TC-TNEB-001 - Download an e-Invoice', async ({ page }, testInfo) => {
   // Precondition: User has internet access.
 
   await test.step('Step 1: Open https://www.tnebnet.org/awp/login?locale=en', async () => {

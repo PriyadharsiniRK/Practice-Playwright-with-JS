@@ -629,7 +629,10 @@ generated test passed as long as six interactions did not throw - including when
 no bill came back; and it carried what looked like a real consumer number and
 the mobile number registered against it. `scripts/build-tneb-inputs.js` is the
 reworked document, with Verify steps and invented account details, and its
-header comment records why. As with CarInfo, the catalog's selectors are
+header comment records why. It numbers its cases `TC-TNEB-*`: the hand-written
+`input/EB-tests.docx` is still in the repository and still owns `TC-EB-001`, and
+two documents sharing a test case id would overwrite each other's generated spec
+with no warning at all. As with CarInfo, the catalog's selectors are
 verified against `mock/tneb.js` and **not** against the live portal.
 
 ### Credentials a test case refers to but does not state

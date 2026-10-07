@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------------
 // GENERATED FILE - do not edit by hand.
 // Produced by playwright-test-generator from a manual test case.
-//   test case : TC-EB-002
+//   test case : TC-TNEB-002
 //   application: TNEB
 //   source    : input/tneb-tests.docx
 //   analyzer  : heuristic
@@ -11,7 +11,7 @@
 
 import { test, expect } from '@playwright/test';
 
-test('TC-EB-002 - The e-Invoice form is reachable without signing in', async ({ page }, testInfo) => {
+test('TC-TNEB-002 - The e-Invoice form is reachable without signing in', async ({ page }, testInfo) => {
   // Precondition: User has internet access. User is not signed in.
 
   await test.step('Step 1: Open https://www.tnebnet.org/awp/login?locale=en', async () => {

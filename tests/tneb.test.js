@@ -29,7 +29,7 @@ const heuristic = createProvider('heuristic');
 const tneb = applicationById('tneb');
 
 const rawCase = (overrides) => ({
-  id: 'TC-EB-XXX',
+  id: 'TC-TNEB-XXX',
   title: 'Case',
   preconditions: [],
   steps: [],

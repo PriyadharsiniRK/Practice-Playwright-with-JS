@@ -8,6 +8,13 @@
  * one is a rule about what a manual test case has to be before it can be
  * automated at all.
  *
+ * The cases are numbered TC-TNEB-* rather than TC-EB-*. The hand-written
+ * document is still in the repository and still owns TC-EB-001; two documents
+ * sharing a test case id would overwrite each other's generated spec, and
+ * whichever ran last would win silently. The rework is a companion to that
+ * document, not a replacement for it - the original is worth keeping precisely
+ * because the three rules below are easier to see side by side.
+ *
  *   1. The site is opened in English. The original step 1 said
  *      `?locale=ta`, which serves the portal in Tamil: every label, and so
  *      every accessible name, is Tamil text. Steps 3 to 6 then asked for
@@ -21,7 +28,7 @@
  *      English" and asserted nothing, so the generated test passed as long as
  *      six clicks and keystrokes did not throw - including when no bill came
  *      back at all. A test case with no Verify step cannot fail, which makes it
- *      worth nothing. TC-EB-001 now ends by checking the invoice is there.
+ *      worth nothing. TC-TNEB-001 now ends by checking the invoice is there.
  *
  *   3. No real account details. The original carried what look like a genuine
  *      12-digit consumer number and the mobile number registered against it.
@@ -48,7 +55,7 @@ const BILL_MONTH = '092026';
 /** The manual test cases, as a tester would have written them. */
 export const TEST_CASES = [
   {
-    id: 'TC-EB-001',
+    id: 'TC-TNEB-001',
     title: 'Download an e-Invoice',
     preconditions: ['User has internet access.'],
     steps: [
@@ -64,7 +71,7 @@ export const TEST_CASES = [
     ],
   },
   {
-    id: 'TC-EB-002',
+    id: 'TC-TNEB-002',
     title: 'The e-Invoice form is reachable without signing in',
     preconditions: ['User has internet access.', 'User is not signed in.'],
     steps: [
@@ -77,7 +84,7 @@ export const TEST_CASES = [
     ],
   },
   {
-    id: 'TC-EB-003',
+    id: 'TC-TNEB-003',
     title: 'Malformed details return no invoice',
     preconditions: ['User has internet access.'],
     steps: [
