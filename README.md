@@ -635,6 +635,35 @@ two documents sharing a test case id would overwrite each other's generated spec
 with no warning at all. As with CarInfo, the catalog's selectors are
 verified against `mock/tneb.js` and **not** against the live portal.
 
+### Reading the real page, when the catalog was a guess
+
+A catalog written without the live site in front of you is a guess, and a guess
+that passes offline is the most misleading kind: the stand-in and the catalog
+were written by the same hand, so they agree whatever the real page says. An
+offline pass proves the pipeline; it says nothing about whether
+`getByRole('textbox', { name: /consumer\s*(no|number)/i })` matches anything on
+tnebnet.org.
+
+`npm run names` closes that gap by printing the real page's accessibility tree -
+Playwright's own computed names, the ones `getByRole()` matches on:
+
+```bash
+npm run names -- "https://www.tnebnet.org/awp/login?locale=en" --click "e-Invoice"
+```
+
+```
+- textbox "Consumer No."
+- textbox "Registered Mobile No"
+- button "Download in English"
+```
+
+`--click` opens a tab first, for fields that are not in the DOM until it does.
+A `textbox` that shows up with **no** name but a `/placeholder:` child needs
+`getByPlaceholder()` - the next tier down in `src/generator/selectorStrategy.js`.
+Paste what it prints into the matching `spec:` in
+`src/generator/applications/<app>.js`; that one file is the only thing that
+changes.
+
 ### Credentials a test case refers to but does not state
 
 A manual test case that needs a login writes the value by name:
@@ -708,6 +737,7 @@ npm run test:unit                          # unit tests for the framework
 npm run build:inputs                       # regenerate the sample documents
 npm run install:browsers                   # download the matching Chromium
 npm run mocks                              # start every stand-in by hand
+npm run names -- "<url>" [--click "<tab>"]  # the live page's real accessible names
 ```
 
 ### If the run hangs after the last test

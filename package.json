@@ -24,7 +24,8 @@
     "demo:orangehrm": "node src/cli.js generate-and-test --input input/orangehrm-tests.xlsx --offline",
     "demo:saucedemo": "node src/cli.js generate-and-test --input input/sample-tests.xlsx --offline",
     "demo:carinfo": "node src/cli.js generate-and-test --input input/carinfo-tests.docx --offline",
-    "demo:tneb": "node src/cli.js generate-and-test --input input/tneb-tests.docx --offline"
+    "demo:tneb": "node src/cli.js generate-and-test --input input/tneb-tests.docx --offline",
+    "names": "node scripts/dump-accessible-names.js"
   },
   "keywords": [
     "playwright",
