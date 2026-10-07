@@ -43,9 +43,16 @@ const channel = process.env.PW_CHANNEL || 'chromium';
  */
 const video = process.env.PW_VIDEO === '1' ? 'retain-on-failure' : 'off';
 
+/**
+ * CarInfo specs are still generated but not run: its sign-in flow has not been
+ * checked against the live site. Set RUN_CARINFO=1 to include them.
+ */
+const testIgnore = process.env.RUN_CARINFO === '1' ? [] : ['**/TC-CI-*.spec.js'];
+
 export default defineConfig({
   testDir,
   testMatch: '**/*.spec.js',
+  testIgnore,
   // Traces and failure screenshots. Kept outside reports/ because the HTML
   // reporter owns that folder and clears it on every run.
   outputDir: './test-results',

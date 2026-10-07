@@ -478,7 +478,7 @@ npm run demo                               # full pipeline against youtube.com
 npm run demo:youtube                       # the same, named for symmetry
 npm run demo:orangehrm                     # full pipeline against the OrangeHRM demo site
 npm run demo:saucedemo                     # full pipeline against saucedemo.com
-npm run demo:carinfo                       # full pipeline against car.info
+npm run demo:carinfo                       # full pipeline against car.info (set RUN_CARINFO=1; skipped by default)
 npm run demo:tneb                          # full pipeline against tnebnet.org
 npm run test:unit                          # unit tests for the framework
 npm run build:inputs                       # regenerate the sample documents

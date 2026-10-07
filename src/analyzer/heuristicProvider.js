@@ -20,8 +20,13 @@ const URL_PATTERN = /\bhttps?:\/\/[^\s"'<>]+/i;
 /**
  * Matches a quoted value, keeping the quote characters balanced so an
  * apostrophe inside a double-quoted value does not truncate it.
+ *
+ * A bare placeholder such as `<consumer no>` counts as a value too, brackets
+ * included: it names a value kept in .env (see the generator's fromEnv), and a
+ * tester writing `Enter <consumer no> in the Consumer No box` should not have to
+ * quote it as well.
  */
-const QUOTED_PATTERN = /"([^"]+)"|“([^”]+)”|'([^']+)'|‘([^’]+)’/;
+const QUOTED_PATTERN = /"([^"]+)"|“([^”]+)”|'([^']+)'|‘([^’]+)’|(<[A-Za-z][A-Za-z0-9_ -]*>)/;
 
 /** Returns the text inside the first balanced pair of quotes, if any. */
 const quotedValue = (text) => text.match(QUOTED_PATTERN)?.slice(1).find((group) => group != null);
@@ -57,7 +62,7 @@ const ACTION_VERB =
  * search box` is one action, and the "and" inside the quotes must not split it.
  */
 export function actionClauses(text) {
-  const withoutValues = text.replace(/"[^"]*"|“[^”]*”|'[^']*'|‘[^’]*’/g, '""');
+  const withoutValues = text.replace(/"[^"]*"|“[^”]*”|'[^']*'|‘[^’]*’|<[A-Za-z][A-Za-z0-9_ -]*>/g, '""');
   return withoutValues
     .split(/\s*,\s*|\s+and\s+then\s+|\s+then\s+|\s+and\s+/i)
     .map((clause) => clause.trim())

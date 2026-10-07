@@ -139,3 +139,24 @@ test('navigation keeps the live portal path and the locale', async () => {
 
   assert.match(live, /page\.goto\('https:\/\/www\.tnebnet\.org\/awp\/login\?locale=en'\)/);
 });
+
+test('account details named as placeholders are read from .env, never written into the spec', async () => {
+  const canonical = await analyze(
+    rawCase({
+      steps: [
+        { stepNumber: 1, text: 'Open https://www.tnebnet.org/awp/login?locale=en' },
+        { stepNumber: 2, text: 'Enter <consumer no> in the Consumer No field' },
+        { stepNumber: 3, text: 'Enter “<mobile no>”in the Registered Mobile No field' },
+        { stepNumber: 4, text: 'Verify that the invoice summary contains "<consumer no>"' },
+      ],
+    }),
+  );
+  assert.equal(catalogId(canonical.steps[1]), 'tneb.consumerNo');
+  assert.equal(catalogId(canonical.steps[2]), 'tneb.mobileNo');
+
+  const { code } = generateSpec({ ...canonical, application: 'tneb' });
+  assert.match(code, /\.fill\(fromEnv\('TNEB_CONSUMER_NO'\)\)/);
+  assert.match(code, /\.fill\(fromEnv\('TNEB_MOBILE_NO'\)\)/);
+  assert.match(code, /toContainText\(fromEnv\('TNEB_CONSUMER_NO'\)\)/);
+  assert.match(code, /secrets {3}: TNEB_CONSUMER_NO, TNEB_MOBILE_NO/);
+});

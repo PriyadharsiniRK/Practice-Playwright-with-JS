@@ -30,11 +30,12 @@
  *      back at all. A test case with no Verify step cannot fail, which makes it
  *      worth nothing. TC-TNEB-001 now ends by checking the invoice is there.
  *
- *   3. No real account details. The original carried what look like a genuine
- *      12-digit consumer number and the mobile number registered against it.
- *      Test documents get committed, mailed and pasted into chat. The numbers
- *      below are made up; put your own in the document locally to run it
- *      against the live portal, and do not commit them.
+ *   3. No real account details. The original carried a genuine 12-digit
+ *      consumer number and the mobile number registered against it. Test
+ *      documents get committed, mailed and pasted into chat, so the steps name
+ *      those values as placeholders - `<consumer no>`, `<mobile no>` - and the
+ *      generated spec reads them from .env (TNEB_CONSUMER_NO, TNEB_MOBILE_NO)
+ *      when it runs. See .env.example.
  */
 
 import fs from 'node:fs';
@@ -47,9 +48,9 @@ const OUTPUT_DIR = 'input';
 /** The portal, in English. See rule 1 above for why the locale is explicit. */
 const PORTAL = 'https://www.tnebnet.org/awp/login?locale=en';
 
-/** Invented account details. See rule 3 above. */
-const CONSUMER_NO = '123456789012';
-const MOBILE_NO = '9000000000';
+/** Account details, by name only. See rule 3 above. */
+const CONSUMER_NO = '<consumer no>';
+const MOBILE_NO = '<mobile no>';
 const BILL_MONTH = '092026';
 
 /** The manual test cases, as a tester would have written them. */

@@ -200,8 +200,11 @@ A manual test case that needs a login writes the value by name:
 ```
 
 `<name>` in a CarInfo test case becomes `CARINFO_<NAME>` - the variable is
-`<APPLICATION>_<NAME>`, both upper-cased - and the generated spec reads it when
-it runs:
+`<APPLICATION>_<NAME>`, both upper-cased, with spaces and punctuation turned
+into `_`, so `<consumer no>` in a TNEB test case is `TNEB_CONSUMER_NO`. The
+placeholder may be quoted or bare (`Enter <consumer no> in the Consumer No
+field`), and works in a `Verify ... contains <consumer no>` step too. The
+generated spec reads it when it runs:
 
 ```js
 await page.getByLabel(/username/i).fill(fromEnv('CARINFO_USERNAME'));
