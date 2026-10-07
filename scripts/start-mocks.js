@@ -1,5 +1,5 @@
 /**
- * Starts all three offline stand-ins in one terminal.
+ * Starts every offline stand-in in one terminal.
  *
  *   npm run mocks
  *
@@ -18,7 +18,7 @@
  *
  *     (no YT_MOCK, so playwright.config.js configures no webServer).
  *
- * Ctrl+C stops all three.
+ * Ctrl+C stops them all.
  */
 
 import { spawn } from 'node:child_process';
@@ -28,6 +28,7 @@ const SERVERS = [
   { file: 'mock/orangehrm.js', name: 'OrangeHRM', port: 4174 },
   { file: 'mock/saucedemo.js', name: 'SauceDemo', port: 4175 },
   { file: 'mock/carinfo.js', name: 'CarInfo', port: 4176 },
+  { file: 'mock/tneb.js', name: 'TNEB', port: 4177 },
 ];
 
 const children = SERVERS.map(({ file, name, port }) => {
@@ -36,7 +37,7 @@ const children = SERVERS.map(({ file, name, port }) => {
     console.error(`Could not start the ${name} stand-in (${file}): ${error.message}`);
   });
   child.on('exit', (code, signal) => {
-    // One server dying is usually a port clash, and the remaining two are no
+    // One server dying is usually a port clash, and the rest are no
     // use on their own - say so and take the whole set down.
     if (signal == null && code !== 0) {
       console.error(`\n${name} stand-in exited with code ${code}. Is port ${port} already in use?`);
@@ -70,7 +71,7 @@ console.log(
     '',
     '  npx playwright test generated/TC-YT',
     '',
-    'Ctrl+C stops all three.',
+    'Ctrl+C stops them all.',
     '',
   ].join('\n'),
 );

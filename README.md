@@ -4,8 +4,10 @@ Turn a manual test case written in **Excel or Word** into an executable
 **Playwright** test — parsed, understood, normalised, generated, executed and
 reported, without anyone writing automation code.
 
-Ships with two applications under test: **YouTube** (search and playback) and
-**OrangeHRM** (login-gated HR app).
+Ships with five applications under test: **YouTube** (search and playback),
+**OrangeHRM** (login-gated HR app), **SauceDemo** (a full checkout),
+**car.info** (registration lookup) and **TNEB** (an electricity board's
+e-Invoice download).
 
 ```
 Manual Test Case  →  Parse  →  Understand  →  Normalise  →  Generate  →  Execute  →  Report
@@ -582,6 +584,54 @@ warning: its selectors follow the site's visible structure but have **not** been
 verified against the live site, only against `mock/carinfo.js`. Passing offline
 proves the pipeline, not the selectors - two different claims.
 
+### TNEB, and two failures that looked like one
+
+The fifth application arrived as somebody else's Word document, and its first
+real run is worth reading in full, because it was red for one reason and
+*wrong* for another - and only one of them was visible.
+
+```
+✓ Step 1 -> NAVIGATE  url = https://www.tnebnet.org/awp/login?locale=ta
+✓ Step 2 -> CLICK  target = e-Invoice link [role]
+✓ Step 3 -> FILL  target = Consumer No box [role], value = 0304...
+...
+✓ TC-EB-001 -> application: YouTube
+⚠ TC-EB-001 states no expected result as a step, so it passes whenever its
+  steps execute
+✘  TC-EB-001 - Login into EB Website (23.6s)
+```
+
+**The red one: the test case contradicted itself.** Step 1 opens the portal with
+`?locale=ta`, which serves it in Tamil - every label, and therefore every
+accessible name, is Tamil text. Steps 3 to 6 then ask for "Consumer No",
+"Registered Mobile No" and "Download in English". No such accessible names exist
+on that page, so step 3 timed out. That is not a framework bug and not a
+selector to fix; it is a manual test case asking for two incompatible things.
+Either open `?locale=en` or write the Tamil labels in the steps *and* in the
+catalog - but not one of each. `mock/tneb.js` honours `locale` precisely so the
+failure reproduces offline: it passes steps 1 and 2 and fails on step 3, exactly
+as the live site did.
+
+**The invisible one: `application: YouTube`.** `tnebnet.org` matched no
+registered application, so the test case fell through to
+`DEFAULT_APPLICATION`. Nothing looked broken, because the analyzer's role
+fallback resolves `Consumer No box` to `getByRole('textbox', { name: /Consumer
+No/i })` with no catalog entry at all. The binding only decides the base URL,
+the offline port, and which elements an error message offers - so the symptom of
+getting it wrong was being told, while testing an electricity board, that the
+known elements are the video player and the YouTube logo.
+`src/generator/applications/tneb.js` fixes it, and `tests/tneb.test.js` pins
+both halves.
+
+Two smaller things the document needed, which are the same lessons CarInfo
+taught: it ended at "click Download in English" and asserted **nothing**, so the
+generated test passed as long as six interactions did not throw - including when
+no bill came back; and it carried what looked like a real consumer number and
+the mobile number registered against it. `scripts/build-tneb-inputs.js` is the
+reworked document, with Verify steps and invented account details, and its
+header comment records why. As with CarInfo, the catalog's selectors are
+verified against `mock/tneb.js` and **not** against the live portal.
+
 ### Credentials a test case refers to but does not state
 
 A manual test case that needs a login writes the value by name:
@@ -610,7 +660,7 @@ The manual wording still appears verbatim in the step title and the report, so
 a reviewer sees `Enter username as "<username>"` - which is what the document
 says.
 
-### Adding a fifth application
+### Adding a sixth application
 
 Write one file under `src/generator/applications/` and register it:
 
@@ -620,7 +670,7 @@ export const myapp = {
   name: 'My App',
   hosts: [/(^|\.)myapp\.com$/i],
   baseUrl: 'https://myapp.com',
-  offlinePort: 4177,
+  offlinePort: 4178,
   targets: [ /* description -> locator */ ],
   assertionHints: [ /* "the basket is displayed" -> ASSERT_URL /basket */ ],
   // Optional, for documents written like SauceDemo's:
@@ -650,10 +700,11 @@ npm run demo:youtube                       # the same, named for symmetry
 npm run demo:orangehrm                     # full pipeline, offline (OrangeHRM)
 npm run demo:saucedemo                     # full pipeline, offline (SauceDemo)
 npm run demo:carinfo                       # full pipeline, offline (CarInfo)
+npm run demo:tneb                          # full pipeline, offline (TNEB)
 npm run test:unit                          # unit tests for the framework
 npm run build:inputs                       # regenerate the sample documents
 npm run install:browsers                   # download the matching Chromium
-npm run mocks                              # start the three stand-ins by hand
+npm run mocks                              # start every stand-in by hand
 ```
 
 ### If the run hangs after the last test
@@ -833,10 +884,15 @@ hand-written one.
 
 `--offline` points the generated tests at the bundled stand-ins — `mock/server.js`
 for YouTube (port 4173), `mock/orangehrm.js` for OrangeHRM (4174),
-`mock/saucedemo.js` for SauceDemo (4175) and `mock/carinfo.js` for CarInfo (4176), each
+`mock/saucedemo.js` for SauceDemo (4175), `mock/carinfo.js` for CarInfo (4176) and
+`mock/tneb.js` for TNEB (4177), each
 a small server reproducing only the accessibility hooks the tests use — the "Search"
 combobox and button, `ytd-search`, `ytd-video-renderer`, the "YouTube Home"
 logo link and `#movie_player`.
+
+One stand-in goes further than reproducing hooks: `mock/tneb.js` honours the
+portal's `locale` parameter, so the bilingual failure described in §11 can be
+reproduced and fixed without the live site.
 
 It exists so the whole pipeline can be demonstrated and run in CI without
 depending on youtube.com being reachable, and without a test suite repeatedly

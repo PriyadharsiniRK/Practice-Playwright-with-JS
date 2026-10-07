@@ -11,8 +11,9 @@ import { youtube } from './youtube.js';
 import { orangehrm } from './orangehrm.js';
 import { saucedemo } from './saucedemo.js';
 import { carinfo } from './carinfo.js';
+import { tneb } from './tneb.js';
 
-export const APPLICATIONS = [youtube, orangehrm, saucedemo, carinfo];
+export const APPLICATIONS = [youtube, orangehrm, saucedemo, carinfo, tneb];
 
 /** The application used when a test case names no recognisable host. */
 export const DEFAULT_APPLICATION = youtube;
