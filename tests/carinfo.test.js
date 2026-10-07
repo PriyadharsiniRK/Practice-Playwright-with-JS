@@ -108,14 +108,12 @@ test('the Log in link is a target, so sign-in can be asserted without being driv
   assert.equal(catalogId(canonical.steps[0]), 'carinfo.loginLink');
 });
 
-test('offline mode swaps only the origin, onto CarInfo’s own port', async () => {
+test('navigation targets the live car.info site', async () => {
   const canonical = await analyze(rawCase({ steps: [{ stepNumber: 1, text: 'Open https://car.info' }] }));
 
   const live = generateSpec({ ...canonical, application: 'carinfo' }).code;
-  const offline = generateSpec({ ...canonical, application: 'carinfo' }, { offline: true }).code;
 
   assert.match(live, /page\.goto\('https:\/\/car\.info'\)/);
-  assert.match(offline, /page\.goto\('http:\/\/127\.0\.0\.1:4176\/'\)/);
 });
 
 test('a credential named in a step is read from the environment, never written into the spec', async () => {

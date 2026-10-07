@@ -15,8 +15,6 @@ export const youtube = {
   /** Hostnames whose test cases resolve to this application. */
   hosts: [/(^|\.)youtube\.com$/i],
   baseUrl: 'https://www.youtube.com',
-  /** Port the offline stand-in listens on (see mock/). */
-  offlinePort: 4173,
 
   targets: [
     {

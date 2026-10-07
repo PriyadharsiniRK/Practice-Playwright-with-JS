@@ -72,7 +72,7 @@ test('assertion shorthands come from the application, not the framework', async 
   assert.equal(canonical.steps[1].value, '/dashboard');
 });
 
-test('offline mode rewrites each application onto its own stand-in port', async () => {
+test('navigation targets the real application origin', async () => {
   const canonical = await analyzeTestCase(
     {
       id: 'TC-OHRM-UNIT-2',
@@ -81,7 +81,5 @@ test('offline mode rewrites each application onto its own stand-in port', async 
     },
     { provider: heuristic },
   );
-  assert.match(generateSpec(canonical, { offline: true }).code, /page\.goto\('http:\/\/127\.0\.0\.1:4174\//);
-  // The real origin is untouched without --offline.
   assert.match(generateSpec(canonical).code, /page\.goto\('https:\/\/opensource-demo\.orangehrmlive\.com'\)/);
 });

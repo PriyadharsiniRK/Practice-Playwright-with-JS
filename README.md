@@ -1,48 +1,35 @@
 # Manual Test Case → Playwright Automation Generator
 
-Turn a manual test case written in **Excel or Word** into an executable
-**Playwright** test — parsed, understood, normalised, generated, executed and
-reported, without anyone writing automation code.
+An AI-assisted test automation framework that turns a manual test case written
+in **Excel or Word** into an executable **Playwright** test. It parses,
+understands, normalises, generates, executes and reports, and nobody writes
+automation code by hand.
 
-Ships with five applications under test: **YouTube** (search and playback),
-**OrangeHRM** (login-gated HR app), **SauceDemo** (a full checkout),
-**car.info** (registration lookup) and **TNEB** (an electricity board's
-e-Invoice download).
+## 1. Project overview
+
+The demo application is **YouTube**: search for a video, verify the results,
+open a video, verify the page. The same pipeline also drives four more sites
+(OrangeHRM, SauceDemo, car.info and TNEB); see
+[docs/applications.md](docs/applications.md).
 
 ```
 Manual Test Case  →  Parse  →  Understand  →  Normalise  →  Generate  →  Execute  →  Report
    (.xlsx/.docx)                  (LLM)      (canonical)   (.spec.js)  (Playwright)  (HTML)
 ```
 
-```console
-$ npm run generate-and-test -- TC-YT-001
+What it demonstrates:
 
-Reading test case TC-YT-001...
-✓ XLSX parsed (input/youtube-tests.xlsx)
-✓ Test case identified: TC-YT-001
-✓ 6 manual steps detected in TC-YT-001
-
-Analyzing steps... (analyzer: anthropic:claude-opus-5)
-✓ Step 1 -> NAVIGATE  url = https://www.youtube.com
-✓ Step 2 -> FILL  target = youtube.searchBox [role], value = Playwright automation
-✓ Step 3 -> CLICK  target = youtube.searchButton [role]
-✓ Step 4 -> ASSERT_VISIBLE  target = youtube.searchResults [css]
-✓ Step 5 -> CLICK  target = youtube.firstSearchResult [css]
-✓ Step 6 -> ASSERT_URL  value = /watch
-
-Generating Playwright test...
-✓ generated/TC-YT-001.spec.js
-
-Executing test...
-✓ TC-YT-001 passed
-
-Report:
-reports/html/index.html
-```
+1. Reading manual test cases from Excel and from Word.
+2. Understanding the intent of each step (LLM, or rule-based without an API key).
+3. Normalising each step into a strictly typed, Zod-validated model.
+4. Mapping that model to Playwright actions with a deterministic generator.
+5. Running the generated tests against the **real site** and producing an
+   HTML report.
+6. Adding a **new** manual test case without changing any framework code.
 
 ---
 
-## 1. Problem statement
+## 2. Problem statement
 
 Most QA teams already own hundreds of well written manual test cases in Excel
 and Word. Automating them is a second, largely mechanical, translation job:
@@ -62,7 +49,7 @@ Playwright code. **The LLM never writes a line of the test.**
 
 ---
 
-## 2. Architecture
+## 3. Architecture
 
 ```
                     ┌──────────────────────┐
@@ -106,11 +93,11 @@ Playwright code. **The LLM never writes a line of the test.**
                                │
                                ▼
                     ┌──────────────────────┐
-                    │ HTML Test Report     │   reports/html/
+                    │ HTML Test Report     │   reports/
                     └──────────────────────┘
 ```
 
-### The design principle
+### The design principle: AI vs framework responsibility
 
 | AI responsibility | Framework responsibility |
 | --- | --- |
@@ -126,7 +113,7 @@ byte-identical code, so generated specs diff cleanly in version control.
 
 ---
 
-## 3. Technology stack
+## 4. Technology stack
 
 | Concern | Choice |
 | --- | --- |
@@ -139,9 +126,7 @@ byte-identical code, so generated specs diff cleanly in version control.
 | Reporting | Playwright HTML reporter |
 | Framework unit tests | `node:test` |
 
----
-
-## 4. Project layout
+### Project layout
 
 ```
 playwright-test-generator/
@@ -153,7 +138,7 @@ playwright-test-generator/
 │   ├── analyzer/
 │   │   ├── testCaseAnalyzer.js   # orchestration + Zod validation
 │   │   ├── llmProvider.js        # Anthropic structured-output interpreter
-│   │   ├── heuristicProvider.js  # offline rule-based interpreter
+│   │   ├── heuristicProvider.js  # rule-based interpreter (no API key)
 │   │   └── prompt.js             # system prompt + per-step prompt
 │   ├── model/
 │   │   └── testCaseSchema.js     # the canonical model (single source of truth)
@@ -163,31 +148,534 @@ playwright-test-generator/
 │   │   └── applications/         # one file per app under test
 │   │       ├── index.js          #   registry + hostname resolution
 │   │       ├── youtube.js
-│   │       └── orangehrm.js
+│   │       ├── orangehrm.js
+│   │       ├── saucedemo.js
+│   │       ├── carinfo.js
+│   │       └── tneb.js
 │   ├── executor/
 │   │   └── testExecutor.js       # runs Playwright, returns the exit code
+│   ├── report/stepReporter.js    # step-by-step HTML report
 │   ├── util/logger.js
 │   └── cli.js
 ├── input/
 │   ├── youtube-tests.xlsx        # sample manual test cases
 │   ├── youtube-tests.docx
-│   ├── orangehrm-tests.xlsx
-│   ├── sample-tests.xlsx
-│   └── orangehrm-tests.docx
+│   └── ...                       # other applications (docs/applications.md)
 ├── generated/                    # generated specs (committed, never hand edited)
 ├── tests/                        # unit tests for the framework itself
-├── mock/
-│   ├── server.js                 # offline stand-in for youtube.com
-│   └── orangehrm.js              # offline stand-in for the OrangeHRM demo
-├── scripts/build-input-files.js  # regenerates the sample documents
-├── reports/                      # Playwright HTML report + traces
+├── scripts/                      # sample-document builders, `npm run names`
+├── docs/                         # per-application notes, report screenshot
+├── reports/                      # HTML report (reports/index.html)
 ├── playwright.config.js
 └── package.json
 ```
 
 ---
 
-## 5. Installation
+## 5. Input format
+
+### Excel
+
+One header row, then **one row per manual step**. Rows sharing a `TestCaseID`
+are grouped into a single test case, in sheet order. Only the first worksheet
+is read.
+
+| TestCaseID | Title | Preconditions | Step | ExpectedResult |
+| --- | --- | --- | --- | --- |
+| TC-YT-001 | Search YouTube | Internet available | Open https://www.youtube.com | YouTube homepage displayed |
+| TC-YT-001 | Search YouTube | Internet available | Enter "Playwright automation" in the search box | Search text entered |
+| TC-YT-001 | Search YouTube | Internet available | Click the Search button | Search results displayed |
+| TC-YT-001 | Search YouTube | Internet available | Click the first search result | Video page displayed |
+
+`TestCaseID`, `Title` and `Step` are required; `Preconditions` and
+`ExpectedResult` are optional. Column headers are matched case- and
+spacing-insensitively, and a few aliases are accepted (`ID`, `Action`,
+`Expected`, …).
+
+### Word
+
+One block per test case:
+
+```
+Test Case ID: TC-YT-001
+Title: Search for a video on YouTube
+Precondition: User has internet access.
+Steps:
+1. Open https://www.youtube.com
+Expected: YouTube homepage is displayed
+2. Enter "Playwright automation" in the search box
+3. Click the Search button
+```
+
+`Expected:` lines attach to the step above them. Any line that does not match
+one of these prefixes is ignored, so headings and blank lines are harmless.
+
+Both sample documents are committed under `input/` and can be regenerated with
+`npm run build:inputs`.
+
+> Supporting arbitrary spreadsheet and document layouts is an explicit
+> non-goal. The formats above are the contract.
+
+---
+
+## 6. Canonical test model
+
+```js
+Action =
+  | 'NAVIGATE' | 'GO_BACK' | 'GO_FORWARD' | 'CLICK' | 'FILL' | 'CLEAR' | 'PRESS' | 'SELECT'
+  | 'ASSERT_VISIBLE' | 'ASSERT_HIDDEN' | 'ASSERT_TEXT' | 'ASSERT_URL' | 'ASSERT_TITLE'
+
+TestStep {
+  stepNumber: number
+  originalText: string        // the manual sentence, kept for traceability
+  action: Action
+  target?: {
+    description: string       // "YouTube search box"
+    role?: string             // "combobox"
+    name?: string             // "Search"
+    locator?: string          // author escape hatch, lowest priority
+  }
+  value?: string
+  expected?: string
+}
+
+TestCase {
+  id: string
+  title: string
+  preconditions?: string[]
+  steps: TestStep[]
+}
+```
+
+Defined in `src/model/testCaseSchema.js` as Zod schemas. Nothing downstream of
+this model ever sees free text it has to interpret.
+
+`npm run analyze -- TC-YT-001` prints the canonical model, which is the most
+useful thing to look at when a generated test is not what you expected.
+
+### Test case understanding
+
+The analyzer asks the model about **one step at a time**, with the rest of the
+test case supplied only as context. It requests a fixed JSON shape via the
+Messages API's structured outputs, so the response is schema-constrained at
+decode time:
+
+```
+Test Case:
+Search for a video on YouTube
+
+Step:
+2. Enter "Playwright automation" in the search box
+```
+
+```json
+{
+  "stepNumber": 2,
+  "originalText": "Enter \"Playwright automation\" in the search box",
+  "action": "FILL",
+  "target": { "description": "YouTube search box", "role": "combobox", "name": "Search" },
+  "value": "Playwright automation"
+}
+```
+
+The response is then validated with Zod on our side as well. If validation
+fails, the analyzer makes **one controlled repair attempt**, handing the model
+the validation error, and re-validates. A second failure raises
+`INVALID_LLM_RESPONSE` with the offending payload rather than guessing.
+
+#### Two analyzers, one contract
+
+| Provider | Used when | Notes |
+| --- | --- | --- |
+| `anthropic:claude-opus-5` | `ANTHROPIC_API_KEY` is set | Handles free-form wording |
+| `heuristic` | no key, or `--provider heuristic` | Deterministic rules, no network, no spend |
+
+Both emit the identical structure and pass through the identical validation, so
+every later stage is unchanged. The provider in use is printed by the CLI and
+recorded in the header of every generated spec — the framework never silently
+swaps one for the other.
+
+### Selector strategy
+
+The model is explicitly forbidden from producing selectors. It describes the
+element; the framework decides how to find it, in this priority order:
+
+```
+1. getByRole()          ← preferred
+2. getByLabel()
+3. getByPlaceholder()
+4. getByText()
+5. locator()            ← CSS, last resort
+```
+
+Each test case is bound to **one application**, chosen from the hostname of its
+first navigation step. That keeps element vocabularies from colliding: "search
+box" means YouTube's masthead combobox in one test case and OrangeHRM's sidebar
+filter in another, and the framework never has to guess which.
+
+Resolution happens in `src/generator/selectorStrategy.js`:
+
+1. **Application catalog** — well-known elements of the app under test are
+   pinned to a curated locator. When several entries match, the most specific
+   wording wins (`first search result` beats `search results`); a genuine tie
+   raises `AMBIGUOUS_TARGET`.
+2. **Analyzer role + name** — `getByRole(role, { name })` for anything not in
+   the catalog.
+3. **Author-supplied `locator`** — the deliberate escape hatch.
+4. Otherwise `TARGET_NOT_UNDERSTOOD`, listing the elements it does know.
+
+So this:
+
+```js
+page.getByRole('button', { name: /search/i })
+```
+
+is always preferred over this:
+
+```js
+page.locator('#some-random-id')
+```
+
+---
+
+## 7. Example manual test
+
+**Manual test case** (`input/youtube-tests.xlsx`, also in `input/youtube-tests.docx`)
+
+```
+Test Case ID: TC-YT-001
+Title:        Search for a video on YouTube
+Precondition: User has internet access.
+
+1. Open https://www.youtube.com
+2. Enter "Playwright automation" in the search box
+3. Click the Search button
+4. Verify that search results are displayed
+5. Click the first search result
+6. Verify that the video page is displayed
+```
+
+**Normalised steps** (`npm run analyze -- TC-YT-001`)
+
+```
+1. NAVIGATE        url = https://www.youtube.com
+2. FILL            target = search input, value = Playwright automation
+3. CLICK           target = Search button
+4. ASSERT_VISIBLE  target = search results
+5. CLICK           target = first search result
+6. ASSERT_URL      expected = /watch
+```
+
+---
+
+## 8. Generated Playwright test
+
+`generated/TC-YT-001.spec.js`, produced by the deterministic generator:
+
+```js
+// ---------------------------------------------------------------------------
+// GENERATED FILE - do not edit by hand.
+// Produced by playwright-test-generator from a manual test case.
+//   test case : TC-YT-001
+//   application: YouTube
+//   source    : input/youtube-tests.xlsx
+//   analyzer  : heuristic
+//   screenshots: one per step
+// Re-run `npm run generate` after editing the manual test case.
+// ---------------------------------------------------------------------------
+
+import { test, expect } from '@playwright/test';
+
+test('TC-YT-001 - Search for a video on YouTube', async ({ page }, testInfo) => {
+  // Precondition: User has internet access.
+
+  await test.step('Step 1: Open https://www.youtube.com', async () => {
+    await page.goto('https://www.youtube.com');
+    await testInfo.attach('Step 1', { body: await page.screenshot(), contentType: 'image/png' });
+  });
+
+  await test.step('Step 2: Enter "Playwright automation" in the search box', async () => {
+    await page.getByRole('combobox', { name: /search/i }).fill('Playwright automation');
+    await testInfo.attach('Step 2', { body: await page.screenshot(), contentType: 'image/png' });
+  });
+
+  await test.step('Step 3: Click the Search button', async () => {
+    await page.getByRole('button', { name: /^search$/i }).click();
+    await testInfo.attach('Step 3', { body: await page.screenshot(), contentType: 'image/png' });
+  });
+
+  await test.step('Step 4: Verify that search results are displayed', async () => {
+    await expect(page.locator('ytd-search')).toBeVisible();
+    await testInfo.attach('Step 4', { body: await page.screenshot(), contentType: 'image/png' });
+  });
+
+  await test.step('Step 5: Click the first search result', async () => {
+    await page.locator('ytd-video-renderer').first().click();
+    await testInfo.attach('Step 5', { body: await page.screenshot(), contentType: 'image/png' });
+  });
+
+  await test.step('Step 6: Verify that the video page is displayed', async () => {
+    await expect(page).toHaveURL(/\/watch/i);
+    await testInfo.attach('Step 6', { body: await page.screenshot(), contentType: 'image/png' });
+  });
+});
+```
+
+Each manual sentence becomes the name of a `test.step()`, so it appears word
+for word in the report and the trace. A failing step points straight back at a
+line in the manual test case. Each step also attaches a screenshot. Generate
+with `--no-screenshots` to leave them out and get only the Playwright
+statements.
+
+> The committed specs were generated with the rule-based analyzer, which is why
+> their header reads `heuristic`. Regenerating with `ANTHROPIC_API_KEY` set
+> produces the same code with `anthropic:claude-opus-5` in the header.
+
+---
+
+## 9. Execution example
+
+```console
+$ npm run generate-and-test -- TC-YT-001
+
+Reading test case TC-YT-001...
+✓ Excel parsed (input/youtube-tests.xlsx)
+✓ Test case identified: TC-YT-001
+✓ 6 manual steps detected
+
+Analyzing steps... (analyzer: heuristic)
+✓ Step 1 → NAVIGATE  url = https://www.youtube.com
+✓ Step 2 → FILL  target = youtube.searchBox [role], value = Playwright automation
+✓ Step 3 → CLICK  target = youtube.searchButton [role]
+✓ Step 4 → ASSERT_VISIBLE  target = youtube.searchResults [css]
+✓ Step 5 → CLICK  target = youtube.firstSearchResult [css]
+✓ Step 6 → ASSERT_URL  value = /watch
+✓ TC-YT-001 → application: YouTube
+
+Generating Playwright test...
+✓ generated/TC-YT-001.spec.js
+
+Executing test...
+✓ TC-YT-001 passed
+
+Report:
+reports/index.html
+```
+
+The tests run against the **real** https://www.youtube.com. There is no mock
+server or offline mode, so an internet connection is required.
+
+### Commands
+
+```bash
+npm run parse             -- TC-YT-001     # document → raw steps (JSON)
+npm run analyze           -- TC-YT-001     # raw steps → canonical model (JSON)
+npm run generate          -- TC-YT-001     # canonical model → generated/*.spec.js
+npm test                                   # run every generated spec
+npm run generate-and-test -- TC-YT-001     # the whole pipeline
+npm run report                             # open reports/index.html
+npm run demo                               # full pipeline against youtube.com
+npm run demo:youtube                       # the same, named for symmetry
+npm run demo:orangehrm                     # full pipeline against the OrangeHRM demo site
+npm run demo:saucedemo                     # full pipeline against saucedemo.com
+npm run demo:carinfo                       # full pipeline against car.info
+npm run demo:tneb                          # full pipeline against tnebnet.org
+npm run test:unit                          # unit tests for the framework
+npm run build:inputs                       # regenerate the sample documents
+npm run install:browsers                   # download the matching Chromium
+npm run names -- "<url>" [--click "<tab>"]  # the live page's real accessible names
+```
+
+Omit the test case id to process every test case in the document.
+
+| Option | Meaning |
+| --- | --- |
+| `-i, --input <file>` | manual test case document (default `input/youtube-tests.xlsx`) |
+| `-o, --out <dir>` | where to write generated specs (default `generated/`) |
+| `-p, --provider <mode>` | `auto` (default), `llm`, or `heuristic` |
+| `--headed` | run the browser headed |
+| `--no-screenshots` | omit the per-step screenshots from the generated specs |
+
+### Reading the Word document instead
+
+```bash
+npm run generate-and-test -- TC-YT-003 --input input/youtube-tests.docx
+```
+
+### Adding a new test case without changing the framework
+
+This is the main demonstration. TC-YT-002 is written only in the spreadsheet
+(and the Word document):
+
+| TestCaseID | Title | Preconditions | Step | ExpectedResult |
+| --- | --- | --- | --- | --- |
+| TC-YT-002 | Verify YouTube homepage | User has internet access. | Open https://www.youtube.com | YouTube homepage is displayed |
+| TC-YT-002 | Verify YouTube homepage | User has internet access. | Verify that the YouTube logo is visible | Logo is shown |
+| TC-YT-002 | Verify YouTube homepage | User has internet access. | Verify that the search box is visible | Search box is shown |
+| TC-YT-002 | Verify YouTube homepage | User has internet access. | Verify that the page title contains "YouTube" | Title contains YouTube |
+
+```console
+$ npm run generate-and-test -- TC-YT-002
+
+✓ Excel parsed (input/youtube-tests.xlsx)
+✓ Test case identified: TC-YT-002
+✓ 4 manual steps detected
+✓ Step 1 → NAVIGATE  url = https://www.youtube.com
+✓ Step 2 → ASSERT_VISIBLE  target = youtube.logo [role]
+✓ Step 3 → ASSERT_VISIBLE  target = youtube.searchBox [role]
+✓ Step 4 → ASSERT_TITLE  value = YouTube
+✓ generated/TC-YT-002.spec.js
+✓ TC-YT-002 passed
+```
+
+**No framework file was edited.** A test case that uses elements the framework
+already knows needs nothing else. A new UI element needs one data entry in
+`src/generator/applications/youtube.js`.
+
+### Error handling
+
+The pipeline refuses to produce automation it cannot stand behind. Every
+failure carries a stable code and a non-zero exit status.
+
+| Code | Raised when |
+| --- | --- |
+| `INVALID_TEST_CASE` | the document is malformed, or the requested id does not exist |
+| `UNSUPPORTED_ACTION` | a step cannot be expressed with the supported actions |
+| `MULTIPLE_ACTIONS_IN_STEP` | one step bundles several instructions; the error lists the split |
+| `TARGET_NOT_UNDERSTOOD` | no locator can be resolved for the element |
+| `AMBIGUOUS_TARGET` | the description matches several known elements equally well |
+| `INVALID_LLM_RESPONSE` | the model's output fails schema validation twice |
+| `GENERATION_FAILED` | the canonical model is internally inconsistent |
+| `TEST_EXECUTION_FAILED` | Playwright could not be started |
+
+```console
+$ npm run generate -- TC-YT-099
+
+✓ Step 1 → NAVIGATE  url = https://www.youtube.com
+
+✗ UNSUPPORTED_ACTION: Unsupported assertion.
+
+Step 2:
+"Verify that recommended videos are relevant"
+
+The framework currently supports:
+- visible
+- text
+- URL
+- title
+```
+
+```console
+✗ TARGET_NOT_UNDERSTOOD: Could not resolve a locator for "subscribe button".
+
+Known elements for YouTube:
+- YouTube search box
+- YouTube search button
+- YouTube search results list
+- first YouTube search result
+- YouTube video player
+- YouTube logo
+- ...
+
+Reword the manual step to refer to one of them, or add the element to src/generator/applications/youtube.js.
+```
+
+A half-understood step never becomes a half-correct test.
+
+---
+
+## 10. Test report
+
+Every run writes two reports:
+
+| File | How to open | What it is for |
+| --- | --- | --- |
+| `reports/index.html` | `npm run report` | Playwright's HTML report, with traces, timings and the full error context. |
+| `reports/step-report.html` | double-click it | One card per manual step: the wording from your document, what the framework did, PASS/FAIL and the screenshot. It is a single file with the images embedded, so it needs no server and can be emailed. |
+
+![Playwright HTML report](docs/playwright-html-report.png)
+
+*Screenshot placeholder: replace `docs/playwright-html-report.png` with a
+screenshot from your own run.*
+
+Open `reports/index.html` with `npm run report` rather than double-clicking it.
+The report loads its data over HTTP, which the browser blocks for `file://`
+pages. On failure, traces and screenshots are kept in `test-results/`, so a
+failed generated test can be debugged like a hand-written one.
+
+---
+
+## 11. Design decisions
+
+* **The LLM never emits code.** It fills in a small JSON object; a template
+  engine produces the Playwright source. This is the single decision the whole
+  project is built around — it makes output reviewable, diffable and
+  reproducible, and it caps the blast radius of a bad model response at "one
+  step was misclassified" rather than "the test does something unexpected".
+* **A canonical model in the middle.** Parsers, analyzers and generators only
+  ever talk to `TestCase`. Adding a PDF parser or a Cypress generator means
+  writing one module, not touching the pipeline.
+* **Zod at every boundary**, including between our own stages. A schema error
+  points at a field, not at a stack trace.
+* **Selectors are framework property, not model output.** The catalog plus a
+  role/name fallback keeps generated tests readable and robust, and makes a
+  brittle selector a one-line fix in one place rather than a find-and-replace
+  across generated files.
+* **One step per model call.** Smaller prompts, cheaper repairs, and a failure
+  isolated to the step that caused it.
+* **The rule-based analyzer is a peer, not a silent fallback.** It always announces
+  itself and is recorded in the generated file header.
+* **Generated specs are committed.** The diff of a regenerated suite is the
+  clearest possible review of a change to a manual test case.
+* **Real sites, not mocks.** Generated tests run against the live
+  application, so a green report means the real page behaved as the manual
+  test case says.
+
+---
+
+## 12. Limitations
+
+* Scope is a deliberately small slice of each application: search and playback
+  on YouTube; login, the dashboard and the PIM menu on OrangeHRM.
+* A fixed set of canonical actions (navigate, back/forward, click, fill, clear,
+  press, select) and assertions (visible, hidden, text, URL, title). Anything
+  else is refused rather than approximated.
+* One header-row Excel layout and one Word layout. No merged cells, no
+  multi-sheet workbooks, no tables inside Word.
+* Elements outside an application's catalog rely on the analyzer inferring a usable
+  role and accessible name.
+* Steps are interpreted independently; there is no cross-step state beyond the
+  test case title supplied as context.
+* Tests need an internet connection. Live sites change: YouTube's consent page
+  (shown in some regions), A/B-tested markup and locale differences can break a
+  curated selector. Run with `--headed` to see what happened, and use
+  `npm run names -- "<url>"` to read the live accessible names when a selector
+  needs updating.
+* The CarInfo and TNEB selectors have not yet been verified against the live
+  sites (see [docs/applications.md](docs/applications.md)).
+* No login, no cookies, no test data management.
+
+---
+
+## 13. Future enhancements
+
+Not implemented, and deliberately so:
+
+* Jira / Xray and Azure DevOps integration
+* PDF test cases
+* Requirement-to-test generation
+* Automatic locator discovery and self-healing selectors
+* Test data generation
+* Combined API + UI tests
+* Test case deduplication and coverage analysis
+* Page Object Model generation
+* CI/CD integration and a test execution dashboard
+* Multiple applications/domains beyond the five included here
+* Human approval gate before generated tests are executed
+
+---
+
+## 14. Installation
 
 ```bash
 git clone https://github.com/PriyadharsiniRK/Practice-Playwright-with-JS.git
@@ -196,17 +684,18 @@ cd Practice-Playwright-with-JS
 npm install
 npm run install:browsers   # not `npx playwright install` - see below
 
-# Optional - enables the LLM analyzer. Without it the offline analyzer is used.
+# Optional - enables the LLM analyzer. Without it the rule-based analyzer is used.
 cp .env.example .env   # then set ANTHROPIC_API_KEY
 ```
 
 `.env` is read on startup (by Node itself - no dotenv dependency) and also
 holds the optional `PW_CHANNEL` and `PW_VIDEO` settings described below.
 
-Try it immediately, no API key and no internet required:
+Try it immediately. No API key is needed, but the tests open the real
+youtube.com, so you need an internet connection:
 
 ```bash
-npm run demo
+npm run generate-and-test -- TC-YT-001
 ```
 
 > **Use `npm run install:browsers`, not `npx playwright install`.** Playwright
@@ -262,740 +751,6 @@ video too.
 
 ---
 
-## 6. Input format
-
-### Excel
-
-One header row, then **one row per manual step**. Rows sharing a `TestCaseID`
-are grouped into a single test case, in sheet order. Only the first worksheet
-is read.
-
-| TestCaseID | Title | Preconditions | Step | ExpectedResult |
-| --- | --- | --- | --- | --- |
-| TC-YT-001 | Search YouTube | Internet available | Open https://www.youtube.com | YouTube homepage displayed |
-| TC-YT-001 | Search YouTube | Internet available | Enter "Playwright automation" in the search box | Search text entered |
-| TC-YT-001 | Search YouTube | Internet available | Click the Search button | Search results displayed |
-| TC-YT-001 | Search YouTube | Internet available | Click the first search result | Video page displayed |
-
-`TestCaseID`, `Title` and `Step` are required; `Preconditions` and
-`ExpectedResult` are optional. Column headers are matched case- and
-spacing-insensitively, and a few aliases are accepted (`ID`, `Action`,
-`Expected`, …).
-
-### Word
-
-One block per test case:
-
-```
-Test Case ID: TC-YT-001
-Title: Search for a video on YouTube
-Precondition: User has internet access.
-Steps:
-1. Open https://www.youtube.com
-Expected: YouTube homepage is displayed
-2. Enter "Playwright automation" in the search box
-3. Click the Search button
-```
-
-`Expected:` lines attach to the step above them. Any line that does not match
-one of these prefixes is ignored, so headings and blank lines are harmless.
-
-Both sample documents are committed under `input/` and can be regenerated with
-`npm run build:inputs`.
-
-> Supporting arbitrary spreadsheet and document layouts is an explicit
-> non-goal. The formats above are the contract.
-
----
-
-## 7. Canonical test model
-
-```js
-Action =
-  | 'NAVIGATE' | 'GO_BACK' | 'GO_FORWARD' | 'CLICK' | 'FILL' | 'CLEAR' | 'PRESS' | 'SELECT'
-  | 'ASSERT_VISIBLE' | 'ASSERT_HIDDEN' | 'ASSERT_TEXT' | 'ASSERT_URL' | 'ASSERT_TITLE'
-
-TestStep {
-  stepNumber: number
-  originalText: string        // the manual sentence, kept for traceability
-  action: Action
-  target?: {
-    description: string       // "YouTube search box"
-    role?: string             // "combobox"
-    name?: string             // "Search"
-    locator?: string          // author escape hatch, lowest priority
-  }
-  value?: string
-  expected?: string
-}
-
-TestCase {
-  id: string
-  title: string
-  preconditions?: string[]
-  steps: TestStep[]
-}
-```
-
-Defined in `src/model/testCaseSchema.js` as Zod schemas. Nothing downstream of
-this model ever sees free text it has to interpret.
-
-`npm run analyze -- TC-YT-001` prints the canonical model, which is the most
-useful thing to look at when a generated test is not what you expected.
-
----
-
-## 8. Test case understanding
-
-The analyzer asks the model about **one step at a time**, with the rest of the
-test case supplied only as context. It requests a fixed JSON shape via the
-Messages API's structured outputs, so the response is schema-constrained at
-decode time:
-
-```
-Test Case:
-Search for a video on YouTube
-
-Step:
-2. Enter "Playwright automation" in the search box
-```
-
-```json
-{
-  "stepNumber": 2,
-  "originalText": "Enter \"Playwright automation\" in the search box",
-  "action": "FILL",
-  "target": { "description": "YouTube search box", "role": "combobox", "name": "Search" },
-  "value": "Playwright automation"
-}
-```
-
-The response is then validated with Zod on our side as well. If validation
-fails, the analyzer makes **one controlled repair attempt**, handing the model
-the validation error, and re-validates. A second failure raises
-`INVALID_LLM_RESPONSE` with the offending payload rather than guessing.
-
-### Two analyzers, one contract
-
-| Provider | Used when | Notes |
-| --- | --- | --- |
-| `anthropic:claude-opus-5` | `ANTHROPIC_API_KEY` is set | Handles free-form wording |
-| `heuristic` | no key, or `--provider heuristic` | Deterministic rules, no network, no spend |
-
-Both emit the identical structure and pass through the identical validation, so
-every later stage is unchanged. The provider in use is printed by the CLI and
-recorded in the header of every generated spec — the framework never silently
-swaps one for the other.
-
----
-
-## 9. Selector strategy
-
-The model is explicitly forbidden from producing selectors. It describes the
-element; the framework decides how to find it, in this priority order:
-
-```
-1. getByRole()          ← preferred
-2. getByLabel()
-3. getByPlaceholder()
-4. getByText()
-5. locator()            ← CSS, last resort
-```
-
-Each test case is bound to **one application**, chosen from the hostname of its
-first navigation step. That keeps element vocabularies from colliding: "search
-box" means YouTube's masthead combobox in one test case and OrangeHRM's sidebar
-filter in another, and the framework never has to guess which.
-
-Resolution happens in `src/generator/selectorStrategy.js`:
-
-1. **Application catalog** — well-known elements of the app under test are
-   pinned to a curated locator. When several entries match, the most specific
-   wording wins (`first search result` beats `search results`); a genuine tie
-   raises `AMBIGUOUS_TARGET`.
-2. **Analyzer role + name** — `getByRole(role, { name })` for anything not in
-   the catalog.
-3. **Author-supplied `locator`** — the deliberate escape hatch.
-4. Otherwise `TARGET_NOT_UNDERSTOOD`, listing the elements it does know.
-
-So this:
-
-```js
-page.getByRole('button', { name: /search/i })
-```
-
-is always preferred over this:
-
-```js
-page.locator('#some-random-id')
-```
-
----
-
-## 10. Example: manual test in, Playwright test out
-
-**Manual test case (Excel row group)**
-
-```
-Test Case ID: TC-YT-001
-Title:        Search for a video on YouTube
-Precondition: User has internet access.
-
-1. Open https://www.youtube.com
-2. Enter "Playwright automation" in the search box
-3. Click the Search button
-4. Verify that search results are displayed
-5. Click the first search result
-6. Verify that the video page is displayed
-```
-
-**Normalised steps**
-
-```
-1. NAVIGATE        url = https://www.youtube.com
-2. FILL            target = search input, value = Playwright automation
-3. CLICK           target = Search button
-4. ASSERT_VISIBLE  target = search results
-5. CLICK           target = first search result
-6. ASSERT_URL      expected = /watch
-```
-
-**Generated `generated/TC-YT-001.spec.js`**
-
-```js
-// ---------------------------------------------------------------------------
-// GENERATED FILE - do not edit by hand.
-// Produced by playwright-test-generator from a manual test case.
-//   test case : TC-YT-001
-//   source    : input/youtube-tests.xlsx
-//   analyzer  : heuristic
-// Re-run `npm run generate` after editing the manual test case.
-// ---------------------------------------------------------------------------
-
-import { test, expect } from '@playwright/test';
-
-test('TC-YT-001 - Search for a video on YouTube', async ({ page }) => {
-  // Precondition: User has internet access.
-
-  // Step 1: Open https://www.youtube.com
-  await page.goto('https://www.youtube.com');
-
-  // Step 2: Enter "Playwright automation" in the search box
-  await page.getByRole('combobox', { name: /search/i }).fill('Playwright automation');
-
-  // Step 3: Click the Search button
-  await page.getByRole('button', { name: /^search$/i }).click();
-
-  // Step 4: Verify that search results are displayed
-  await expect(page.locator('ytd-search')).toBeVisible();
-
-  // Step 5: Click the first search result
-  await page.locator('ytd-video-renderer').first().click();
-
-  // Step 6: Verify that the video page is displayed
-  await expect(page).toHaveURL(/\/watch/i);
-});
-```
-
-Each generated statement carries the manual sentence it came from, so a
-failing line in CI points straight back at a line in the manual test case.
-
-> The committed specs were generated with the offline analyzer, which is why
-> their header reads `heuristic`. Regenerating with `ANTHROPIC_API_KEY` set
-> produces the same code with `anthropic:claude-opus-5` in the header.
-
----
-
-## 11. A second application: OrangeHRM
-
-The same pipeline, the same input format, a different site. Nothing in
-`src/parser/`, `src/model/`, `src/generator/playwrightGenerator.js` or
-`src/executor/` knows which application it is working on.
-
-**Manual test case** (`input/orangehrm-tests.xlsx`)
-
-```
-Test Case ID: TC-OHRM-002
-Title:        Reject invalid credentials
-
-1. Open https://opensource-demo.orangehrmlive.com
-2. Enter "Admin" in the Username field
-3. Enter "wrong-password" in the Password field
-4. Click the Login button
-5. Verify that the login error message is visible
-6. Verify that the URL contains "/auth/login"
-```
-
-**Generated `generated/TC-OHRM-002.spec.js`**
-
-```js
-await page.goto('https://opensource-demo.orangehrmlive.com');
-await page.getByPlaceholder(/username/i).fill('Admin');
-await page.getByPlaceholder(/password/i).fill('wrong-password');
-await page.getByRole('button', { name: /^\s*login\s*$/i }).click();
-await expect(page.getByText(/invalid credentials/i)).toBeVisible();
-await expect(page).toHaveURL(/\/auth\/login/i);
-```
-
-OrangeHRM's inputs carry a placeholder but no label or accessible name, and its
-login failure is a text banner — so it reaches the `getByPlaceholder()` and
-`getByText()` tiers of the selector strategy that a search-only site never
-touches. Between the applications, **all five tiers and every canonical
-action** are exercised.
-
-### SauceDemo, and what a third application taught the framework
-
-`input/sample-tests.xlsx` covers [saucedemo.com](https://www.saucedemo.com):
-login, cart, sorting and checkout. Its manual test cases are written in a style
-the first two documents never used, and each difference became a rule:
-
-| The document does this | The framework learned to |
-| --- | --- |
-| Names no URL anywhere — just "User is on SauceDemo login page" | Bind by the application name the prose uses, and let a test case that names nothing inherit its document's application |
-| Writes `Enter username standard_user` — no quotes | Let an application declare its own unquoted wording (`dataEntry`) |
-| Writes `Enter first name` — no value at all | Take the value from the application's declared test data, rather than inventing one in the analyzer |
-| States setup as a precondition (`User is logged in`) and writes no step for it | Emit a `Setup:` block that performs it, unless the test case navigates for itself |
-| Says `Open shopping cart` | Treat "open" with no address as a click, not a navigation |
-| Says `Verify backpack is not displayed` | Assert absence (`ASSERT_HIDDEN`), not presence |
-| Says `Verify Products heading` and puts the check in the ExpectedResult column | Read the ExpectedResult column as part of the step |
-| Says `Select Price low to high` | Emit `selectOption()` (`SELECT`), not a click |
-
-None of that is site-specific logic in the pipeline: the rules are generic, and
-what they mean for SauceDemo is declared in `src/generator/applications/saucedemo.js`.
-
-### CarInfo, and what a manual test case has to be before it can be automated
-
-The fourth application arrived as a hand-written Word document, and three of its
-steps could not be automated **as written**. That is more instructive than the
-catalog itself, so the reasons are recorded here:
-
-| The document said | Why it cannot be automated | What replaced it |
-| --- | --- | --- |
-| Sign in with Google | OAuth is built to resist automation: bot detection, device verification, markup that changes without notice. The test would be red for reasons unrelated to the application | TC-CI-003 asserts a signed-out visitor is *offered* sign-in |
-| "If it further requests for access, click on Continue" | A conditional step makes the run non-deterministic, and a test that does different things on different runs cannot be asserted about | A deterministic precondition, or an explicit assertion that the dialog is absent |
-| "Enter username as X and password as Y" | Two actions in one step; the canonical model is one action per step | Two steps |
-| A real address and password in the document | Test documents get committed, mailed and pasted into chat. A secret in one is a secret published | Placeholders, and no sign-in at all |
-
-`scripts/build-carinfo-inputs.js` is the reworked document, and the reasoning is
-in its header comment.
-
-The catalog in `src/generator/applications/carinfo.js` also carries an honest
-warning: its selectors follow the site's visible structure but have **not** been
-verified against the live site, only against `mock/carinfo.js`. Passing offline
-proves the pipeline, not the selectors - two different claims.
-
-### TNEB, and two failures that looked like one
-
-The fifth application arrived as somebody else's Word document, and its first
-real run is worth reading in full, because it was red for one reason and
-*wrong* for another - and only one of them was visible.
-
-```
-✓ Step 1 -> NAVIGATE  url = https://www.tnebnet.org/awp/login?locale=ta
-✓ Step 2 -> CLICK  target = e-Invoice link [role]
-✓ Step 3 -> FILL  target = Consumer No box [role], value = 0304...
-...
-✓ TC-EB-001 -> application: YouTube
-⚠ TC-EB-001 states no expected result as a step, so it passes whenever its
-  steps execute
-✘  TC-EB-001 - Login into EB Website (23.6s)
-```
-
-**The red one: the test case contradicted itself.** Step 1 opens the portal with
-`?locale=ta`, which serves it in Tamil - every label, and therefore every
-accessible name, is Tamil text. Steps 3 to 6 then ask for "Consumer No",
-"Registered Mobile No" and "Download in English". No such accessible names exist
-on that page, so step 3 timed out. That is not a framework bug and not a
-selector to fix; it is a manual test case asking for two incompatible things.
-Either open `?locale=en` or write the Tamil labels in the steps *and* in the
-catalog - but not one of each. `mock/tneb.js` honours `locale` precisely so the
-failure reproduces offline: it passes steps 1 and 2 and fails on step 3, exactly
-as the live site did.
-
-**The invisible one: `application: YouTube`.** `tnebnet.org` matched no
-registered application, so the test case fell through to
-`DEFAULT_APPLICATION`. Nothing looked broken, because the analyzer's role
-fallback resolves `Consumer No box` to `getByRole('textbox', { name: /Consumer
-No/i })` with no catalog entry at all. The binding only decides the base URL,
-the offline port, and which elements an error message offers - so the symptom of
-getting it wrong was being told, while testing an electricity board, that the
-known elements are the video player and the YouTube logo.
-`src/generator/applications/tneb.js` fixes it, and `tests/tneb.test.js` pins
-both halves.
-
-Two smaller things the document needed, which are the same lessons CarInfo
-taught: it ended at "click Download in English" and asserted **nothing**, so the
-generated test passed as long as six interactions did not throw - including when
-no bill came back; and it carried what looked like a real consumer number and
-the mobile number registered against it. `scripts/build-tneb-inputs.js` is the
-reworked document, with Verify steps and invented account details, and its
-header comment records why. It numbers its cases `TC-TNEB-*`: the hand-written
-`input/EB-tests.docx` is still in the repository and still owns `TC-EB-001`, and
-two documents sharing a test case id would overwrite each other's generated spec
-with no warning at all. As with CarInfo, the catalog's selectors are
-verified against `mock/tneb.js` and **not** against the live portal.
-
-### Reading the real page, when the catalog was a guess
-
-A catalog written without the live site in front of you is a guess, and a guess
-that passes offline is the most misleading kind: the stand-in and the catalog
-were written by the same hand, so they agree whatever the real page says. An
-offline pass proves the pipeline; it says nothing about whether
-`getByRole('textbox', { name: /consumer\s*(no|number)/i })` matches anything on
-tnebnet.org.
-
-`npm run names` closes that gap by printing the real page's accessibility tree -
-Playwright's own computed names, the ones `getByRole()` matches on:
-
-```bash
-npm run names -- "https://www.tnebnet.org/awp/login?locale=en" --click "e-Invoice"
-```
-
-```
-- textbox "Consumer No."
-- textbox "Registered Mobile No"
-- button "Download in English"
-```
-
-`--click` opens a tab first, for fields that are not in the DOM until it does.
-A `textbox` that shows up with **no** name but a `/placeholder:` child needs
-`getByPlaceholder()` - the next tier down in `src/generator/selectorStrategy.js`.
-Paste what it prints into the matching `spec:` in
-`src/generator/applications/<app>.js`; that one file is the only thing that
-changes.
-
-### Credentials a test case refers to but does not state
-
-A manual test case that needs a login writes the value by name:
-
-```
-4. Enter username as "<username>"
-5. and password as "<password>"
-```
-
-`<name>` in a CarInfo test case becomes `CARINFO_<NAME>` - the variable is
-`<APPLICATION>_<NAME>`, both upper-cased - and the generated spec reads it when
-it runs:
-
-```js
-await page.getByLabel(/username/i).fill(fromEnv('CARINFO_USERNAME'));
-```
-
-The placeholder is deliberately **not** resolved at generation time.
-Substituting then would only move the secret from one committed file to
-another, because `generated/` is in version control too. Resolving at run time
-means the value exists only in `.env`, which is gitignored. A missing variable
-throws by name rather than filling a blank field and failing later at a
-confusing assertion.
-
-The manual wording still appears verbatim in the step title and the report, so
-a reviewer sees `Enter username as "<username>"` - which is what the document
-says.
-
-### Adding a sixth application
-
-Write one file under `src/generator/applications/` and register it:
-
-```js
-export const myapp = {
-  id: 'myapp',
-  name: 'My App',
-  hosts: [/(^|\.)myapp\.com$/i],
-  baseUrl: 'https://myapp.com',
-  offlinePort: 4178,
-  targets: [ /* description -> locator */ ],
-  assertionHints: [ /* "the basket is displayed" -> ASSERT_URL /basket */ ],
-  // Optional, for documents written like SauceDemo's:
-  nameHints: [ /* bind by name when no step carries a URL */ ],
-  dataEntry: [ /* wording for values that are not in quotes */ ],
-  stepHints: [ /* wording whose verb does not name its action */ ],
-  preconditionHints: [ /* what "user is logged in" means in actions */ ],
-};
-```
-
-No pipeline code changes. The application is picked automatically from the URL
-in step 1 of the manual test case, or from the name its prose uses.
-
----
-
-## 12. Commands
-
-```bash
-npm run parse             -- TC-YT-001     # document → raw steps (JSON)
-npm run analyze           -- TC-YT-001     # raw steps → canonical model (JSON)
-npm run generate          -- TC-YT-001     # canonical model → generated/*.spec.js
-npm test                                   # run every generated spec
-npm run generate-and-test -- TC-YT-001     # the whole pipeline
-npm run report                             # open the HTML report
-npm run demo                               # full pipeline, offline (YouTube)
-npm run demo:youtube                       # the same, named for symmetry
-npm run demo:orangehrm                     # full pipeline, offline (OrangeHRM)
-npm run demo:saucedemo                     # full pipeline, offline (SauceDemo)
-npm run demo:carinfo                       # full pipeline, offline (CarInfo)
-npm run demo:tneb                          # full pipeline, offline (TNEB)
-npm run test:unit                          # unit tests for the framework
-npm run build:inputs                       # regenerate the sample documents
-npm run install:browsers                   # download the matching Chromium
-npm run mocks                              # start every stand-in by hand
-npm run names -- "<url>" [--click "<tab>"]  # the live page's real accessible names
-```
-
-### If the run hangs after the last test
-
-Every test reports a result, and then nothing: no `N passed` summary, no
-`Step-by-step report: ...` line, and Ctrl+C is the only way out. Afterwards
-`npm run report` shows the *previous* run.
-
-Those three symptoms are one thing. Reporters write their files in `onEnd`,
-which Playwright calls **after** it has torn the run down - and teardown
-includes stopping the `webServer` stand-ins. A hang there means the tests all
-ran and passed but nothing was ever written, so the report on disk is stale.
-
-Own the stand-ins yourself and that step leaves the run altogether:
-
-```bash
-# terminal 1
-npm run mocks
-
-# terminal 2 - no YT_MOCK, so playwright.config.js configures no webServer
-npx playwright test generated/TC-YT
-```
-
-Playwright now has nothing to shut down, reaches `onEnd`, and writes both
-reports. Ctrl+C in the first terminal stops all three servers.
-
-Every manual step becomes a named `test.step()` in the generated spec, and each
-one attaches a screenshot of the page as it stood when that step finished. The
-report therefore lists your manual wording verbatim - `Step 4: Click the Login
-button` - with the matching picture underneath, so a manual tester can check
-what the automation actually did without reading any code. Generate with
-`--no-screenshots` to leave the attachments out.
-
-### Two reports
-
-Every run writes both:
-
-| File | How to open | What it is for |
-| --- | --- | --- |
-| `reports/step-report.html` | double-click it | Cross-checking. One card per manual step: the wording from your document, what the framework did, PASS/FAIL, and the screenshot. Images are embedded, so it is a single self-contained file - no server, and you can email it. |
-| `reports/html/index.html` | `npm run report` | Debugging. Playwright's own report, with traces, timings and the full error context. |
-
-On a failing step the card shows the error and Playwright's failure screenshot,
-labelled as such - a step that fails never reaches its own screenshot call.
-
-The report is served over HTTP, not opened from disk - the reporter writes
-`index.html` plus a `data/` directory that the page fetches at runtime, and
-those fetches are blocked under `file://`, so double-clicking `index.html`
-gives a blank report. `npm run report` keeps serving until you press Ctrl+C;
-leave it running and open the URL it prints in another window.
-
-Omit the test case id to process every test case in the document.
-
-| Option | Meaning |
-| --- | --- |
-| `-i, --input <file>` | manual test case document (default `input/youtube-tests.xlsx`) |
-| `-o, --out <dir>` | where to write generated specs (default `generated/`) |
-| `-p, --provider <mode>` | `auto` (default), `llm`, or `heuristic` |
-| `--offline` | generate and run against the bundled local stand-in |
-| `--headed` | run the browser headed |
-| `--no-screenshots` | omit the per-step screenshots from the generated specs |
-
-### Reading the Word document instead
-
-```bash
-npm run generate-and-test -- TC-YT-003 --input input/youtube-tests.docx
-```
-
-### Running the OrangeHRM cases
-
-```bash
-npm run generate-and-test -- --input input/orangehrm-tests.xlsx
-npm run generate-and-test -- --input input/orangehrm-tests.docx
-```
-
----
-
-## 13. Adding a new test case — the point of the whole thing
-
-Add rows to the spreadsheet. That is the entire workflow.
-
-| TestCaseID | Title | Preconditions | Step | ExpectedResult |
-| --- | --- | --- | --- | --- |
-| TC-YT-005 | Search using the keyboard only | Internet available | Open https://www.youtube.com | Homepage shown |
-| TC-YT-005 | Search using the keyboard only | Internet available | Enter "Playwright trace viewer" in the search box | Text entered |
-| TC-YT-005 | Search using the keyboard only | Internet available | Press Enter | Search submitted |
-| TC-YT-005 | Search using the keyboard only | Internet available | Verify that search results are displayed | Results shown |
-| TC-YT-005 | Search using the keyboard only | Internet available | Verify that the page title contains "Playwright" | Tab shows the query |
-
-```bash
-npm run generate-and-test -- TC-YT-005
-```
-
-```
-✓ Step 1 -> NAVIGATE  url = https://www.youtube.com
-✓ Step 2 -> FILL  target = youtube.searchBox [role], value = Playwright trace viewer
-✓ Step 3 -> PRESS  value = Enter
-✓ Step 4 -> ASSERT_VISIBLE  target = youtube.searchResults [css]
-✓ Step 5 -> ASSERT_TITLE  value = Playwright
-✓ generated/TC-YT-005.spec.js
-✓ TC-YT-005 passed
-```
-
-**No framework file was edited.** A new UI element that the catalog has never
-seen is a one-line data entry in `TARGET_CATALOG`; a new test case over
-existing elements needs nothing at all.
-
----
-
-## 14. Error handling
-
-The pipeline refuses to produce automation it cannot stand behind. Every
-failure carries a stable code and a non-zero exit status.
-
-| Code | Raised when |
-| --- | --- |
-| `INVALID_TEST_CASE` | the document is malformed, or the requested id does not exist |
-| `UNSUPPORTED_ACTION` | a step cannot be expressed with the supported actions |
-| `MULTIPLE_ACTIONS_IN_STEP` | one step bundles several instructions; the error lists the split |
-| `TARGET_NOT_UNDERSTOOD` | no locator can be resolved for the element |
-| `AMBIGUOUS_TARGET` | the description matches several known elements equally well |
-| `INVALID_LLM_RESPONSE` | the model's output fails schema validation twice |
-| `GENERATION_FAILED` | the canonical model is internally inconsistent |
-| `TEST_EXECUTION_FAILED` | Playwright could not be started |
-
-```console
-$ npm run generate -- TC-YT-099
-
-✓ Step 1 -> NAVIGATE  url = https://www.youtube.com
-
-✗ UNSUPPORTED_ACTION: Unsupported assertion.
-
-Step 2:
-"Verify that recommended videos are relevant"
-
-The framework currently supports:
-- visible
-- text
-- URL
-- title
-```
-
-```console
-✗ TARGET_NOT_UNDERSTOOD: Could not resolve a locator for "subscribe button".
-
-Known elements for this application:
-- YouTube search box
-- YouTube search button
-- YouTube search results list
-- first YouTube search result
-- YouTube video player
-- YouTube logo
-- video title heading on the watch page
-
-Reword the manual step to refer to one of them, or add the element to
-TARGET_CATALOG in src/generator/selectorStrategy.js.
-```
-
-A half-understood step never becomes a half-correct test.
-
----
-
-## 15. Test report
-
-`npm test` writes a Playwright HTML report to `reports/html/`; open it with
-`npm run report`.
-
-![Playwright HTML report showing ten generated test cases passing across YouTube and OrangeHRM](docs/playwright-html-report.png)
-
-Traces, screenshots and video are retained on failure under
-`reports/artifacts/`, so a failed generated test is debuggable exactly like a
-hand-written one.
-
----
-
-## 16. Offline mode
-
-`--offline` points the generated tests at the bundled stand-ins — `mock/server.js`
-for YouTube (port 4173), `mock/orangehrm.js` for OrangeHRM (4174),
-`mock/saucedemo.js` for SauceDemo (4175), `mock/carinfo.js` for CarInfo (4176) and
-`mock/tneb.js` for TNEB (4177), each
-a small server reproducing only the accessibility hooks the tests use — the "Search"
-combobox and button, `ytd-search`, `ytd-video-renderer`, the "YouTube Home"
-logo link and `#movie_player`.
-
-One stand-in goes further than reproducing hooks: `mock/tneb.js` honours the
-portal's `locale` parameter, so the bilingual failure described in §11 can be
-reproduced and fixed without the live site.
-
-It exists so the whole pipeline can be demonstrated and run in CI without
-depending on youtube.com being reachable, and without a test suite repeatedly
-hitting a third-party site. **Only the origin in `page.goto()` differs** — every
-selector, action and assertion in the generated code is identical to the code
-that runs against the real site.
-
----
-
-## 17. Design decisions
-
-* **The LLM never emits code.** It fills in a small JSON object; a template
-  engine produces the Playwright source. This is the single decision the whole
-  project is built around — it makes output reviewable, diffable and
-  reproducible, and it caps the blast radius of a bad model response at "one
-  step was misclassified" rather than "the test does something unexpected".
-* **A canonical model in the middle.** Parsers, analyzers and generators only
-  ever talk to `TestCase`. Adding a PDF parser or a Cypress generator means
-  writing one module, not touching the pipeline.
-* **Zod at every boundary**, including between our own stages. A schema error
-  points at a field, not at a stack trace.
-* **Selectors are framework property, not model output.** The catalog plus a
-  role/name fallback keeps generated tests readable and robust, and makes a
-  brittle selector a one-line fix in one place rather than a find-and-replace
-  across generated files.
-* **One step per model call.** Smaller prompts, cheaper repairs, and a failure
-  isolated to the step that caused it.
-* **The offline analyzer is a peer, not a silent fallback.** It always announces
-  itself and is recorded in the generated file header.
-* **Generated specs are committed.** The diff of a regenerated suite is the
-  clearest possible review of a change to a manual test case.
-
----
-
-## 18. Limitations
-
-* Scope is a deliberately small slice of each application: search and playback
-  on YouTube; login, the dashboard and the PIM menu on OrangeHRM.
-* Nine canonical actions and four assertion kinds. Anything else is refused
-  rather than approximated.
-* One header-row Excel layout and one Word layout. No merged cells, no
-  multi-sheet workbooks, no tables inside Word.
-* Elements outside `TARGET_CATALOG` rely on the analyzer inferring a usable
-  role and accessible name.
-* Steps are interpreted independently; there is no cross-step state beyond the
-  test case title supplied as context.
-* Against the live site, YouTube's consent dialogs, A/B tested markup and
-  locale differences can affect the curated selectors — the offline mode exists
-  partly because of this.
-* No login, no cookies, no test data management.
-
----
-
-## 19. Future enhancements
-
-Not implemented, and deliberately so:
-
-* Jira / Xray and Azure DevOps integration
-* PDF test cases
-* Requirement-to-test generation
-* Automatic locator discovery and self-healing selectors
-* Test data generation
-* Combined API + UI tests
-* Test case deduplication and coverage analysis
-* Page Object Model generation
-* CI/CD integration and a test execution dashboard
-* Human approval gate before generated tests are executed
-
----
-
-## 20. Licence
+## Licence
 
 MIT — see [LICENSE](LICENSE).

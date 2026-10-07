@@ -7,13 +7,9 @@ loadProjectEnv();
 
 /**
  * The suite under test is the `generated/` directory - those files are produced
- * by `npm run generate`, never hand written.
- *
- * When YT_MOCK=1 (set by `--offline`) a tiny local stand-in for YouTube is
- * started first, so the whole pipeline can be demonstrated and run in CI
- * without depending on youtube.com being reachable.
+ * by `npm run generate`, never hand written. They run against the real sites
+ * named in the manual test cases.
  */
-const offline = process.env.YT_MOCK === '1';
 
 /** The CLI's --out directory, so generated specs are runnable wherever they land. */
 const testDir = process.env.GENERATED_DIR || './generated';
@@ -50,7 +46,9 @@ const video = process.env.PW_VIDEO === '1' ? 'retain-on-failure' : 'off';
 export default defineConfig({
   testDir,
   testMatch: '**/*.spec.js',
-  outputDir: './reports/artifacts',
+  // Traces and failure screenshots. Kept outside reports/ because the HTML
+  // reporter owns that folder and clears it on every run.
+  outputDir: './test-results',
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
@@ -60,9 +58,10 @@ export default defineConfig({
 
   reporter: [
     ['list'],
-    ['html', { outputFolder: 'reports/html', open: 'never' }],
+    ['html', { outputFolder: 'reports', open: 'never' }],
     // Step-by-step view for cross-checking against the manual test case. Single
-    // file with the screenshots embedded, so it opens without a server.
+    // file with the screenshots embedded, so it opens without a server. Listed
+    // after 'html' so it is written after that reporter has reset reports/.
     ['./src/report/stepReporter.js', { outputFile: 'reports/step-report.html' }],
   ],
 
@@ -85,41 +84,4 @@ export default defineConfig({
     },
   ],
 
-  // One stand-in per application under test.
-  ...(offline
-    ? {
-        webServer: [
-          {
-            command: 'node mock/server.js',
-            url: 'http://127.0.0.1:4173/',
-            reuseExistingServer: true,
-            timeout: 30_000,
-          },
-          {
-            command: 'node mock/orangehrm.js',
-            url: 'http://127.0.0.1:4174/web/index.php/auth/login',
-            reuseExistingServer: true,
-            timeout: 30_000,
-          },
-          {
-            command: 'node mock/saucedemo.js',
-            url: 'http://127.0.0.1:4175/',
-            reuseExistingServer: true,
-            timeout: 30_000,
-          },
-          {
-            command: 'node mock/carinfo.js',
-            url: 'http://127.0.0.1:4176/',
-            reuseExistingServer: true,
-            timeout: 30_000,
-          },
-          {
-            command: 'node mock/tneb.js',
-            url: 'http://127.0.0.1:4177/awp/login',
-            reuseExistingServer: true,
-            timeout: 30_000,
-          },
-        ],
-      }
-    : {}),
 });

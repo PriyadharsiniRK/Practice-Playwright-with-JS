@@ -57,12 +57,11 @@ test('generated code prefers getByRole over CSS', async () => {
   assert.match(code, /await expect\(page\)\.toHaveURL\(\/\\\/watch\/i\)/);
 });
 
-test('offline mode only rewrites the origin', async () => {
+test('generated tests navigate to the real site', async () => {
   const canonical = await analyzeTestCase(rawCase, { provider: heuristic });
-  const { code } = generateSpec(canonical, { baseUrl: 'http://127.0.0.1:4173' });
-  assert.match(code, /page\.goto\('http:\/\/127\.0\.0\.1:4173\/'\)/);
-  // Everything after the navigation is unchanged.
-  assert.match(code, /page\.getByRole\('combobox', \{ name: \/search\/i \}\)/);
+  const { code } = generateSpec(canonical);
+  assert.match(code, /page\.goto\('https:\/\/www\.youtube\.com'\)/);
+  assert.doesNotMatch(code, /127\.0\.0\.1/);
 });
 
 test('the most specific catalog entry wins', () => {

@@ -25,8 +25,8 @@
  *
  * NOTE: as with car.info, these selectors follow the portal's visible structure
  * but have NOT been verified against the live site - tnebnet.org is not
- * reachable from the sandbox this was written in. They are verified against
- * mock/tneb.js. Expect to adjust them on the first real run; a target catalog
+ * reachable from the sandbox this was written in. Expect to adjust them on the
+ * first real run (`npm run names` lists the live accessible names); a target catalog
  * is exactly the one file where that adjustment belongs.
  */
 
@@ -35,8 +35,6 @@ export const tneb = {
   name: 'TNEB',
   hosts: [/(^|\.)tnebnet\.org$/i],
   baseUrl: 'https://www.tnebnet.org',
-  /** Port the offline stand-in listens on (see mock/tneb.js). */
-  offlinePort: 4177,
   /**
    * Wording that binds a test case to this application when no step carries a
    * URL. "EB" is how the document under test refers to the site, and is worth

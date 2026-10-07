@@ -5,7 +5,7 @@
  *   node src/cli.js parse             [TC-ID] [--input <file>]
  *   node src/cli.js analyze           [TC-ID] [--provider auto|llm|heuristic]
  *   node src/cli.js generate          [TC-ID]
- *   node src/cli.js generate-and-test [TC-ID] [--offline] [--headed]
+ *   node src/cli.js generate-and-test [TC-ID] [--headed]
  *   node src/cli.js report
  */
 
@@ -41,7 +41,6 @@ function parseArgs(argv) {
     input: DEFAULT_INPUT,
     outDir: DEFAULT_OUTPUT_DIR,
     provider: 'auto',
-    offline: false,
     headed: false,
     screenshots: true,
   };
@@ -60,9 +59,6 @@ function parseArgs(argv) {
       case '--provider':
       case '-p':
         options.provider = rest[++i];
-        break;
-      case '--offline':
-        options.offline = true;
         break;
       case '--headed':
         options.headed = true;
@@ -99,8 +95,6 @@ Options:
                           default: ${DEFAULT_INPUT}
   -o, --out <dir>         output directory for generated specs (default: ${DEFAULT_OUTPUT_DIR})
   -p, --provider <mode>   auto | llm | heuristic  (default: auto)
-      --offline           generate and run against the bundled local stand-ins
-                          instead of the real sites
       --headed            run the browser headed
       --no-screenshots    omit the per-step screenshots from generated specs
   -h, --help              show this help
@@ -110,11 +104,13 @@ Options:
 async function loadTestCases(options) {
   logger.heading(`Reading test case ${options.testCaseId ?? '(all)'}...`);
   const parsed = await parseDocument(options.input);
-  logger.step(`${path.extname(options.input).replace('.', '').toUpperCase()} parsed (${options.input})`);
+  const format = path.extname(options.input).toLowerCase() === '.docx' ? 'Word' : 'Excel';
+  logger.step(`${format} parsed (${options.input})`);
   const selected = selectTestCase(parsed, options.testCaseId);
   logger.step(`Test case identified: ${selected.map((t) => t.id).join(', ')}`);
   for (const testCase of selected) {
-    logger.step(`${testCase.steps.length} manual steps detected in ${testCase.id}`);
+    const where = selected.length > 1 ? ` in ${testCase.id}` : '';
+    logger.step(`${testCase.steps.length} manual steps detected${where}`);
   }
   return selected;
 }
@@ -124,7 +120,7 @@ async function analyze(rawTestCases, options) {
   const provider = createProvider(options.provider);
   logger.heading(`Analyzing steps... (analyzer: ${provider.name})`);
   if (provider.name === 'heuristic' && options.provider === 'auto') {
-    logger.warn('No ANTHROPIC_API_KEY found - using the offline rule-based analyzer.');
+    logger.warn('No ANTHROPIC_API_KEY found - using the rule-based analyzer.');
   }
 
   const analyzed = [];
@@ -139,10 +135,10 @@ async function analyze(rawTestCases, options) {
       application,
       onStep: (step) => {
         const detail = describeStep(step, application);
-        logger.step(`Step ${step.stepNumber} -> ${step.action}${detail ? `  ${detail}` : ''}`);
+        logger.step(`Step ${step.stepNumber} → ${step.action}${detail ? `  ${detail}` : ''}`);
       },
     });
-    logger.step(`${rawTestCase.id} -> application: ${application.name}`);
+    logger.step(`${rawTestCase.id} → application: ${application.name}`);
     analyzed.push({ raw: rawTestCase, canonical, provider: provider.name });
   }
   return analyzed;
@@ -168,7 +164,6 @@ function generate(analyzed, options) {
   const written = [];
   for (const entry of analyzed) {
     const { fileName, code } = generateSpec(entry.canonical, {
-      offline: options.offline,
       sourceFile: entry.raw.source,
       provider: entry.provider,
       screenshots: options.screenshots,
@@ -183,9 +178,6 @@ function generate(analyzed, options) {
       );
     }
     written.push(filePath);
-  }
-  if (options.offline) {
-    logger.warn('Offline mode: generated tests target the bundled local stand-ins, not the real sites.');
   }
   return written;
 }
@@ -233,7 +225,6 @@ async function main() {
 
       logger.heading('Executing test...');
       const { exitCode, reportPath } = await runTests(files, {
-        offline: options.offline,
         headed: options.headed,
         testDir: options.outDir,
       });

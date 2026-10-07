@@ -15,7 +15,7 @@ test('TC-TNEB-003 - Malformed details return no invoice', async ({ page }, testI
   // Precondition: User has internet access.
 
   await test.step('Step 1: Open https://www.tnebnet.org/awp/login?locale=en', async () => {
-    await page.goto('http://127.0.0.1:4177/awp/login?locale=en');
+    await page.goto('https://www.tnebnet.org/awp/login?locale=en');
     await testInfo.attach('Step 1', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
