@@ -7,10 +7,7 @@
  *   HEADED=1 node scripts/dump-accessible-names.js <url>
  *
  * This exists because a target catalog written without the live site in front
- * of you is a guess, and a guess that passes offline is the most misleading
- * kind: the stand-in and the catalog were written by the same hand, so they
- * agree no matter what the real page says. The cure is to read the real page's
- * accessible names.
+ * of you is a guess. The cure is to read the real page's accessible names.
  *
  * `--click <name>` clicks a link, button or tab with that accessible name
  * before dumping, for fields that live behind a tab and are not in the DOM

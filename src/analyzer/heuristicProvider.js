@@ -1,5 +1,5 @@
 /**
- * Offline rule-based step interpreter.
+ * Rule-based step interpreter (used when no LLM API key is configured).
  *
  * Produces exactly the same structure as the LLM provider, so every downstream
  * stage is identical. It exists for two reasons:
@@ -300,7 +300,7 @@ export function createHeuristicProvider() {
         ErrorCode.UNSUPPORTED_ACTION,
         `Step ${rawStep.stepNumber} could not be classified: "${text}"`,
         {
-          hint: 'The offline heuristic analyzer understands open/enter/click/press/verify steps. Set ANTHROPIC_API_KEY and run with --provider llm for free-form wording.',
+          hint: 'The rule-based analyzer understands open/enter/click/press/verify steps. Set ANTHROPIC_API_KEY and run with --provider llm for free-form wording.',
         },
       );
     },

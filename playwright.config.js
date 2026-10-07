@@ -7,13 +7,9 @@ loadProjectEnv();
 
 /**
  * The suite under test is the `generated/` directory - those files are produced
- * by `npm run generate`, never hand written.
- *
- * When YT_MOCK=1 (set by `--offline`) a tiny local stand-in for YouTube is
- * started first, so the whole pipeline can be demonstrated and run in CI
- * without depending on youtube.com being reachable.
+ * by `npm run generate`, never hand written. They run against the real sites
+ * named in the manual test cases.
  */
-const offline = process.env.YT_MOCK === '1';
 
 /** The CLI's --out directory, so generated specs are runnable wherever they land. */
 const testDir = process.env.GENERATED_DIR || './generated';
@@ -85,41 +81,4 @@ export default defineConfig({
     },
   ],
 
-  // One stand-in per application under test.
-  ...(offline
-    ? {
-        webServer: [
-          {
-            command: 'node mock/server.js',
-            url: 'http://127.0.0.1:4173/',
-            reuseExistingServer: true,
-            timeout: 30_000,
-          },
-          {
-            command: 'node mock/orangehrm.js',
-            url: 'http://127.0.0.1:4174/web/index.php/auth/login',
-            reuseExistingServer: true,
-            timeout: 30_000,
-          },
-          {
-            command: 'node mock/saucedemo.js',
-            url: 'http://127.0.0.1:4175/',
-            reuseExistingServer: true,
-            timeout: 30_000,
-          },
-          {
-            command: 'node mock/carinfo.js',
-            url: 'http://127.0.0.1:4176/',
-            reuseExistingServer: true,
-            timeout: 30_000,
-          },
-          {
-            command: 'node mock/tneb.js',
-            url: 'http://127.0.0.1:4177/awp/login',
-            reuseExistingServer: true,
-            timeout: 30_000,
-          },
-        ],
-      }
-    : {}),
 });

@@ -153,7 +153,7 @@ playwright-test-generator/
 │   ├── analyzer/
 │   │   ├── testCaseAnalyzer.js   # orchestration + Zod validation
 │   │   ├── llmProvider.js        # Anthropic structured-output interpreter
-│   │   ├── heuristicProvider.js  # offline rule-based interpreter
+│   │   ├── heuristicProvider.js  # rule-based interpreter (no API key)
 │   │   └── prompt.js             # system prompt + per-step prompt
 │   ├── model/
 │   │   └── testCaseSchema.js     # the canonical model (single source of truth)
@@ -176,9 +176,6 @@ playwright-test-generator/
 │   └── orangehrm-tests.docx
 ├── generated/                    # generated specs (committed, never hand edited)
 ├── tests/                        # unit tests for the framework itself
-├── mock/
-│   ├── server.js                 # offline stand-in for youtube.com
-│   └── orangehrm.js              # offline stand-in for the OrangeHRM demo
 ├── scripts/build-input-files.js  # regenerates the sample documents
 ├── reports/                      # Playwright HTML report + traces
 ├── playwright.config.js
@@ -196,7 +193,7 @@ cd Practice-Playwright-with-JS
 npm install
 npm run install:browsers   # not `npx playwright install` - see below
 
-# Optional - enables the LLM analyzer. Without it the offline analyzer is used.
+# Optional - enables the LLM analyzer. Without it the rule-based analyzer is used.
 cp .env.example .env   # then set ANTHROPIC_API_KEY
 ```
 
@@ -500,7 +497,7 @@ test('TC-YT-001 - Search for a video on YouTube', async ({ page }) => {
 Each generated statement carries the manual sentence it came from, so a
 failing line in CI points straight back at a line in the manual test case.
 
-> The committed specs were generated with the offline analyzer, which is why
+> The committed specs were generated with the rule-based analyzer, which is why
 > their header reads `heuristic`. Regenerating with `ANTHROPIC_API_KEY` set
 > produces the same code with `anthropic:claude-opus-5` in the header.
 
@@ -581,8 +578,8 @@ in its header comment.
 
 The catalog in `src/generator/applications/carinfo.js` also carries an honest
 warning: its selectors follow the site's visible structure but have **not** been
-verified against the live site, only against `mock/carinfo.js`. Passing offline
-proves the pipeline, not the selectors - two different claims.
+verified against the live site yet. Run `npm run names -- https://car.info` to
+read the real accessible names and adjust the catalog on the first live run.
 
 ### TNEB, and two failures that looked like one
 
@@ -608,16 +605,14 @@ accessible name, is Tamil text. Steps 3 to 6 then ask for "Consumer No",
 on that page, so step 3 timed out. That is not a framework bug and not a
 selector to fix; it is a manual test case asking for two incompatible things.
 Either open `?locale=en` or write the Tamil labels in the steps *and* in the
-catalog - but not one of each. `mock/tneb.js` honours `locale` precisely so the
-failure reproduces offline: it passes steps 1 and 2 and fails on step 3, exactly
-as the live site did.
+catalog - but not one of each.
 
 **The invisible one: `application: YouTube`.** `tnebnet.org` matched no
 registered application, so the test case fell through to
 `DEFAULT_APPLICATION`. Nothing looked broken, because the analyzer's role
 fallback resolves `Consumer No box` to `getByRole('textbox', { name: /Consumer
 No/i })` with no catalog entry at all. The binding only decides the base URL,
-the offline port, and which elements an error message offers - so the symptom of
+and which elements an error message offers - so the symptom of
 getting it wrong was being told, while testing an electricity board, that the
 known elements are the video player and the YouTube logo.
 `src/generator/applications/tneb.js` fixes it, and `tests/tneb.test.js` pins
@@ -632,17 +627,14 @@ reworked document, with Verify steps and invented account details, and its
 header comment records why. It numbers its cases `TC-TNEB-*`: the hand-written
 `input/EB-tests.docx` is still in the repository and still owns `TC-EB-001`, and
 two documents sharing a test case id would overwrite each other's generated spec
-with no warning at all. As with CarInfo, the catalog's selectors are
-verified against `mock/tneb.js` and **not** against the live portal.
+with no warning at all. As with CarInfo, the catalog's selectors have
+**not** yet been verified against the live portal.
 
 ### Reading the real page, when the catalog was a guess
 
-A catalog written without the live site in front of you is a guess, and a guess
-that passes offline is the most misleading kind: the stand-in and the catalog
-were written by the same hand, so they agree whatever the real page says. An
-offline pass proves the pipeline; it says nothing about whether
-`getByRole('textbox', { name: /consumer\s*(no|number)/i })` matches anything on
-tnebnet.org.
+A catalog written without the live site in front of you is a guess: nothing
+says whether `getByRole('textbox', { name: /consumer\s*(no|number)/i })` matches
+anything on tnebnet.org until it runs there.
 
 `npm run names` closes that gap by printing the real page's accessibility tree -
 Playwright's own computed names, the ones `getByRole()` matches on:
@@ -702,7 +694,6 @@ export const myapp = {
   name: 'My App',
   hosts: [/(^|\.)myapp\.com$/i],
   baseUrl: 'https://myapp.com',
-  offlinePort: 4178,
   targets: [ /* description -> locator */ ],
   assertionHints: [ /* "the basket is displayed" -> ASSERT_URL /basket */ ],
   // Optional, for documents written like SauceDemo's:
@@ -727,42 +718,17 @@ npm run generate          -- TC-YT-001     # canonical model → generated/*.spe
 npm test                                   # run every generated spec
 npm run generate-and-test -- TC-YT-001     # the whole pipeline
 npm run report                             # open the HTML report
-npm run demo                               # full pipeline, offline (YouTube)
+npm run demo                               # full pipeline against youtube.com
 npm run demo:youtube                       # the same, named for symmetry
-npm run demo:orangehrm                     # full pipeline, offline (OrangeHRM)
-npm run demo:saucedemo                     # full pipeline, offline (SauceDemo)
-npm run demo:carinfo                       # full pipeline, offline (CarInfo)
-npm run demo:tneb                          # full pipeline, offline (TNEB)
+npm run demo:orangehrm                     # full pipeline against the OrangeHRM demo site
+npm run demo:saucedemo                     # full pipeline against saucedemo.com
+npm run demo:carinfo                       # full pipeline against car.info
+npm run demo:tneb                          # full pipeline against tnebnet.org
 npm run test:unit                          # unit tests for the framework
 npm run build:inputs                       # regenerate the sample documents
 npm run install:browsers                   # download the matching Chromium
-npm run mocks                              # start every stand-in by hand
 npm run names -- "<url>" [--click "<tab>"]  # the live page's real accessible names
 ```
-
-### If the run hangs after the last test
-
-Every test reports a result, and then nothing: no `N passed` summary, no
-`Step-by-step report: ...` line, and Ctrl+C is the only way out. Afterwards
-`npm run report` shows the *previous* run.
-
-Those three symptoms are one thing. Reporters write their files in `onEnd`,
-which Playwright calls **after** it has torn the run down - and teardown
-includes stopping the `webServer` stand-ins. A hang there means the tests all
-ran and passed but nothing was ever written, so the report on disk is stale.
-
-Own the stand-ins yourself and that step leaves the run altogether:
-
-```bash
-# terminal 1
-npm run mocks
-
-# terminal 2 - no YT_MOCK, so playwright.config.js configures no webServer
-npx playwright test generated/TC-YT
-```
-
-Playwright now has nothing to shut down, reaches `onEnd`, and writes both
-reports. Ctrl+C in the first terminal stops all three servers.
 
 Every manual step becomes a named `test.step()` in the generated spec, and each
 one attaches a screenshot of the page as it stood when that step finished. The
@@ -796,7 +762,6 @@ Omit the test case id to process every test case in the document.
 | `-i, --input <file>` | manual test case document (default `input/youtube-tests.xlsx`) |
 | `-o, --out <dir>` | where to write generated specs (default `generated/`) |
 | `-p, --provider <mode>` | `auto` (default), `llm`, or `heuristic` |
-| `--offline` | generate and run against the bundled local stand-in |
 | `--headed` | run the browser headed |
 | `--no-screenshots` | omit the per-step screenshots from the generated specs |
 
@@ -913,25 +878,23 @@ hand-written one.
 
 ---
 
-## 16. Offline mode
+## 16. Running against the real sites
 
-`--offline` points the generated tests at the bundled stand-ins — `mock/server.js`
-for YouTube (port 4173), `mock/orangehrm.js` for OrangeHRM (4174),
-`mock/saucedemo.js` for SauceDemo (4175), `mock/carinfo.js` for CarInfo (4176) and
-`mock/tneb.js` for TNEB (4177), each
-a small server reproducing only the accessibility hooks the tests use — the "Search"
-combobox and button, `ytd-search`, `ytd-video-renderer`, the "YouTube Home"
-logo link and `#movie_player`.
+Every generated test runs against the live site named in the manual test case -
+`https://www.youtube.com`, the OrangeHRM demo, saucedemo.com, car.info and
+tnebnet.org. There is no mock server and no offline mode: what the report shows
+is what the real page did.
 
-One stand-in goes further than reproducing hooks: `mock/tneb.js` honours the
-portal's `locale` parameter, so the bilingual failure described in §11 can be
-reproduced and fixed without the live site.
+Things to keep in mind when running live:
 
-It exists so the whole pipeline can be demonstrated and run in CI without
-depending on youtube.com being reachable, and without a test suite repeatedly
-hitting a third-party site. **Only the origin in `page.goto()` differs** — every
-selector, action and assertion in the generated code is identical to the code
-that runs against the real site.
+* An internet connection is required, and a slow network may need a longer
+  `timeout` / `navigationTimeout` in `playwright.config.js`.
+* In some regions YouTube shows a cookie-consent page before the home page.
+  Accept it once in a headed run (`--headed`) or add a "Click Accept all" step
+  to the manual test case.
+* Real sites change their markup. When a selector stops matching, run
+  `npm run names -- "<url>"` to read the live accessible names and update the
+  application's catalog in `src/generator/applications/`.
 
 ---
 
@@ -953,7 +916,7 @@ that runs against the real site.
   across generated files.
 * **One step per model call.** Smaller prompts, cheaper repairs, and a failure
   isolated to the step that caused it.
-* **The offline analyzer is a peer, not a silent fallback.** It always announces
+* **The rule-based analyzer is a peer, not a silent fallback.** It always announces
   itself and is recorded in the generated file header.
 * **Generated specs are committed.** The diff of a regenerated suite is the
   clearest possible review of a change to a manual test case.
@@ -973,8 +936,7 @@ that runs against the real site.
 * Steps are interpreted independently; there is no cross-step state beyond the
   test case title supplied as context.
 * Against the live site, YouTube's consent dialogs, A/B tested markup and
-  locale differences can affect the curated selectors — the offline mode exists
-  partly because of this.
+  locale differences can affect the curated selectors (see §16).
 * No login, no cookies, no test data management.
 
 ---

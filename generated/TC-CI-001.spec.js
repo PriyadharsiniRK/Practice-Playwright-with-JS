@@ -15,7 +15,7 @@ test('TC-CI-001 - Look up a vehicle by registration number', async ({ page }, te
   // Precondition: User has internet access.
 
   await test.step('Step 1: Open https://car.info', async () => {
-    await page.goto('http://127.0.0.1:4176/');
+    await page.goto('https://car.info');
     await testInfo.attach('Step 1', { body: await page.screenshot(), contentType: 'image/png' });
   });
 

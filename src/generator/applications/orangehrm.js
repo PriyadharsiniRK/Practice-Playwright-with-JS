@@ -12,7 +12,6 @@ export const orangehrm = {
   name: 'OrangeHRM',
   hosts: [/(^|\.)orangehrmlive\.com$/i, /(^|\.)orangehrm\.com$/i],
   baseUrl: 'https://opensource-demo.orangehrmlive.com',
-  offlinePort: 4174,
 
   targets: [
     {

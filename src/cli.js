@@ -5,7 +5,7 @@
  *   node src/cli.js parse             [TC-ID] [--input <file>]
  *   node src/cli.js analyze           [TC-ID] [--provider auto|llm|heuristic]
  *   node src/cli.js generate          [TC-ID]
- *   node src/cli.js generate-and-test [TC-ID] [--offline] [--headed]
+ *   node src/cli.js generate-and-test [TC-ID] [--headed]
  *   node src/cli.js report
  */
 
@@ -41,7 +41,6 @@ function parseArgs(argv) {
     input: DEFAULT_INPUT,
     outDir: DEFAULT_OUTPUT_DIR,
     provider: 'auto',
-    offline: false,
     headed: false,
     screenshots: true,
   };
@@ -60,9 +59,6 @@ function parseArgs(argv) {
       case '--provider':
       case '-p':
         options.provider = rest[++i];
-        break;
-      case '--offline':
-        options.offline = true;
         break;
       case '--headed':
         options.headed = true;
@@ -99,8 +95,6 @@ Options:
                           default: ${DEFAULT_INPUT}
   -o, --out <dir>         output directory for generated specs (default: ${DEFAULT_OUTPUT_DIR})
   -p, --provider <mode>   auto | llm | heuristic  (default: auto)
-      --offline           generate and run against the bundled local stand-ins
-                          instead of the real sites
       --headed            run the browser headed
       --no-screenshots    omit the per-step screenshots from generated specs
   -h, --help              show this help
@@ -124,7 +118,7 @@ async function analyze(rawTestCases, options) {
   const provider = createProvider(options.provider);
   logger.heading(`Analyzing steps... (analyzer: ${provider.name})`);
   if (provider.name === 'heuristic' && options.provider === 'auto') {
-    logger.warn('No ANTHROPIC_API_KEY found - using the offline rule-based analyzer.');
+    logger.warn('No ANTHROPIC_API_KEY found - using the rule-based analyzer.');
   }
 
   const analyzed = [];
@@ -168,7 +162,6 @@ function generate(analyzed, options) {
   const written = [];
   for (const entry of analyzed) {
     const { fileName, code } = generateSpec(entry.canonical, {
-      offline: options.offline,
       sourceFile: entry.raw.source,
       provider: entry.provider,
       screenshots: options.screenshots,
@@ -183,9 +176,6 @@ function generate(analyzed, options) {
       );
     }
     written.push(filePath);
-  }
-  if (options.offline) {
-    logger.warn('Offline mode: generated tests target the bundled local stand-ins, not the real sites.');
   }
   return written;
 }
@@ -233,7 +223,6 @@ async function main() {
 
       logger.heading('Executing test...');
       const { exitCode, reportPath } = await runTests(files, {
-        offline: options.offline,
         headed: options.headed,
         testDir: options.outDir,
       });

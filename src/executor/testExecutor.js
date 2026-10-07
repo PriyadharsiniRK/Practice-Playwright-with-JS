@@ -46,7 +46,7 @@ export function resolvePlaywrightCli(fromUrl = import.meta.url) {
 
 /**
  * @param {string[]} specFiles paths of generated spec files (empty = whole suite)
- * @param {{ offline?: boolean, headed?: boolean, cwd?: string, testDir?: string }} [options]
+ * @param {{ headed?: boolean, cwd?: string, testDir?: string }} [options]
  * @returns {Promise<{ exitCode: number, reportPath: string }>}
  */
 export function runTests(specFiles = [], options = {}) {
@@ -54,7 +54,6 @@ export function runTests(specFiles = [], options = {}) {
   if (options.headed) args.push('--headed');
 
   const env = { ...process.env };
-  if (options.offline) env.YT_MOCK = '1';
   if (options.testDir) env.GENERATED_DIR = options.testDir;
 
   return new Promise((resolve, reject) => {

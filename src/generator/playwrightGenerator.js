@@ -61,24 +61,6 @@ export function emitLocator(spec) {
 }
 
 /**
- * Rewrites a NAVIGATE url onto a different origin. Used by the offline demo so
- * the very same canonical test case can run against a local stand-in; each
- * application has its own stand-in port.
- */
-function applyBaseUrl(url, baseUrl) {
-  if (!baseUrl) return url;
-  try {
-    const source = new URL(url);
-    const target = new URL(baseUrl);
-    target.pathname = source.pathname === '/' ? target.pathname : source.pathname;
-    target.search = source.search;
-    return target.toString();
-  } catch {
-    return url;
-  }
-}
-
-/**
  * Builds the statement(s) for one canonical step. The manual wording is not
  * repeated here as a comment - it becomes the name of the enclosing
  * `test.step()`, so it shows up in the HTML report and the trace as well.
@@ -93,7 +75,7 @@ function emitStep(step, options) {
       if (!url) {
         throw new PipelineError(ErrorCode.GENERATION_FAILED, `Step ${step.stepNumber} is a NAVIGATE with no URL.`);
       }
-      lines.push(`await page.goto(${quote(applyBaseUrl(url, options.baseUrl))});`);
+      lines.push(`await page.goto(${quote(url)});`);
       break;
     }
     case 'GO_BACK':
@@ -219,8 +201,7 @@ function setupSteps(canonical, application) {
 
 /**
  * @param {object} testCase canonical test case
- * @param {{ offline?: boolean, baseUrl?: string, sourceFile?: string, provider?: string,
- *          screenshots?: boolean }} [options] screenshots default to on
+ * @param {{ sourceFile?: string, provider?: string, screenshots?: boolean }} [options] screenshots default to on
  * @returns {{ fileName: string, code: string }}
  */
 export function generateSpec(testCase, options = {}) {
@@ -232,8 +213,6 @@ export function generateSpec(testCase, options = {}) {
   }
   const canonical = parsed.data;
   const application = applicationById(canonical.application) ?? DEFAULT_APPLICATION;
-  // `--offline` swaps only the origin; every selector and assertion is unchanged.
-  const baseUrl = options.offline ? `http://127.0.0.1:${application.offlinePort}` : options.baseUrl;
   const screenshots = options.screenshots !== false;
   const secrets = secretsRequiredBy(canonical, application);
 
@@ -303,7 +282,7 @@ export function generateSpec(testCase, options = {}) {
   if (setup.length) {
     body.push(`${INDENT}await test.step('Setup: reach the starting point of the manual test case', async () => {`);
     for (const step of setup) {
-      for (const line of emitStep(step, { ...options, application, baseUrl })) {
+      for (const line of emitStep(step, { ...options, application })) {
         body.push(INDENT + INDENT + line);
       }
     }
@@ -316,7 +295,7 @@ export function generateSpec(testCase, options = {}) {
   canonical.steps.forEach((step, index) => {
     if (index > 0) body.push('');
     body.push(`${INDENT}await test.step(${quote(`Step ${step.stepNumber}: ${step.originalText}`)}, async () => {`);
-    for (const line of emitStep(step, { ...options, application, baseUrl })) {
+    for (const line of emitStep(step, { ...options, application })) {
       body.push(INDENT + INDENT + line);
     }
     if (screenshots) {

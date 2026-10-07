@@ -8,7 +8,7 @@
  *      `application: YouTube`. Nothing matched tnebnet.org, so the test case
  *      fell through to DEFAULT_APPLICATION. The analyzer's role fallback is
  *      good enough to make that invisible until something depends on the
- *      application - the base URL, the offline port, or the list of elements an
+ *      application - the base URL, or the list of elements an
  *      error message offers.
  *
  *   2. The run opened the portal with `?locale=ta` and then looked for a field
@@ -132,12 +132,10 @@ test('a step naming neither a catalog element nor a role is refused, with TNEB e
   );
 });
 
-test('offline mode swaps only the origin, keeping the path and the locale', async () => {
+test('navigation keeps the live portal path and the locale', async () => {
   const canonical = await oneStep('Open https://www.tnebnet.org/awp/login?locale=en');
 
   const live = generateSpec({ ...canonical, application: 'tneb' }).code;
-  const offline = generateSpec({ ...canonical, application: 'tneb' }, { offline: true }).code;
 
   assert.match(live, /page\.goto\('https:\/\/www\.tnebnet\.org\/awp\/login\?locale=en'\)/);
-  assert.match(offline, /page\.goto\('http:\/\/127\.0\.0\.1:4177\/awp\/login\?locale=en'\)/);
 });

@@ -33,8 +33,8 @@
  *   3. No real account details. The original carried what look like a genuine
  *      12-digit consumer number and the mobile number registered against it.
  *      Test documents get committed, mailed and pasted into chat. The numbers
- *      below are made up, and the offline stand-in accepts any well-formed
- *      consumer number so a real one is never needed to demonstrate the run.
+ *      below are made up; put your own in the document locally to run it
+ *      against the live portal, and do not commit them.
  */
 
 import fs from 'node:fs';

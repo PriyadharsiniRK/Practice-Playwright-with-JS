@@ -15,7 +15,7 @@ test('TC-YT-008 - Search results mention a named alternative', async ({ page }, 
   // Precondition: User has internet access.
 
   await test.step('Step 1: Open https://www.youtube.com', async () => {
-    await page.goto('http://127.0.0.1:4173/');
+    await page.goto('https://www.youtube.com');
     await testInfo.attach('Step 1', { body: await page.screenshot(), contentType: 'image/png' });
   });
 

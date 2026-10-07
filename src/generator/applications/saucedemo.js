@@ -19,8 +19,6 @@ export const saucedemo = {
   name: 'SauceDemo',
   hosts: [/(^|\.)saucedemo\.com$/i],
   baseUrl: 'https://www.saucedemo.com',
-  /** Port the offline stand-in listens on (see mock/saucedemo.js). */
-  offlinePort: 4175,
   /**
    * Wording that binds a test case to this application when no step carries a
    * URL - a manual tester writes "User is on SauceDemo login page" instead.

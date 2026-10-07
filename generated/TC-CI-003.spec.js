@@ -15,7 +15,7 @@ test('TC-CI-003 - A signed-out visitor is offered sign-in', async ({ page }, tes
   // Precondition: User has internet access. User is not signed in.
 
   await test.step('Step 1: Open https://car.info', async () => {
-    await page.goto('http://127.0.0.1:4176/');
+    await page.goto('https://car.info');
     await testInfo.attach('Step 1', { body: await page.screenshot(), contentType: 'image/png' });
   });
 

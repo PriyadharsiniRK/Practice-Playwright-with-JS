@@ -15,7 +15,7 @@ test('TC-OHRM-002 - Reject invalid credentials', async ({ page }, testInfo) => {
   // Precondition: The demo instance is reachable.
 
   await test.step('Step 1: Open https://opensource-demo.orangehrmlive.com', async () => {
-    await page.goto('http://127.0.0.1:4174/');
+    await page.goto('https://opensource-demo.orangehrmlive.com');
     await testInfo.attach('Step 1', { body: await page.screenshot(), contentType: 'image/png' });
   });
 

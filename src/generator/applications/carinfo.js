@@ -22,8 +22,8 @@
  *
  * NOTE: these selectors follow the site's visible structure but have NOT been
  * verified against the live site - car.info was unreachable from the sandbox
- * this was written in. They are verified against mock/carinfo.js. Expect to
- * adjust them on the first real run; that is what a target catalog is for.
+ * this was written in. Expect to adjust them on the first real run
+ * (`npm run names -- https://car.info` lists the live accessible names); that is what a target catalog is for.
  */
 
 export const carinfo = {
@@ -31,8 +31,6 @@ export const carinfo = {
   name: 'CarInfo',
   hosts: [/(^|\.)car\.info$/i],
   baseUrl: 'https://car.info',
-  /** Port the offline stand-in listens on (see mock/carinfo.js). */
-  offlinePort: 4176,
   /** Wording that binds a test case to this application when no step has a URL. */
   nameHints: [/\bcar\s*\.?\s*info\b/i],
 
