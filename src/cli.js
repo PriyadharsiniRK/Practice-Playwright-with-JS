@@ -104,11 +104,13 @@ Options:
 async function loadTestCases(options) {
   logger.heading(`Reading test case ${options.testCaseId ?? '(all)'}...`);
   const parsed = await parseDocument(options.input);
-  logger.step(`${path.extname(options.input).replace('.', '').toUpperCase()} parsed (${options.input})`);
+  const format = path.extname(options.input).toLowerCase() === '.docx' ? 'Word' : 'Excel';
+  logger.step(`${format} parsed (${options.input})`);
   const selected = selectTestCase(parsed, options.testCaseId);
   logger.step(`Test case identified: ${selected.map((t) => t.id).join(', ')}`);
   for (const testCase of selected) {
-    logger.step(`${testCase.steps.length} manual steps detected in ${testCase.id}`);
+    const where = selected.length > 1 ? ` in ${testCase.id}` : '';
+    logger.step(`${testCase.steps.length} manual steps detected${where}`);
   }
   return selected;
 }
@@ -133,10 +135,10 @@ async function analyze(rawTestCases, options) {
       application,
       onStep: (step) => {
         const detail = describeStep(step, application);
-        logger.step(`Step ${step.stepNumber} -> ${step.action}${detail ? `  ${detail}` : ''}`);
+        logger.step(`Step ${step.stepNumber} → ${step.action}${detail ? `  ${detail}` : ''}`);
       },
     });
-    logger.step(`${rawTestCase.id} -> application: ${application.name}`);
+    logger.step(`${rawTestCase.id} → application: ${application.name}`);
     analyzed.push({ raw: rawTestCase, canonical, provider: provider.name });
   }
   return analyzed;

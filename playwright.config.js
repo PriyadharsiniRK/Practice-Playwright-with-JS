@@ -46,7 +46,9 @@ const video = process.env.PW_VIDEO === '1' ? 'retain-on-failure' : 'off';
 export default defineConfig({
   testDir,
   testMatch: '**/*.spec.js',
-  outputDir: './reports/artifacts',
+  // Traces and failure screenshots. Kept outside reports/ because the HTML
+  // reporter owns that folder and clears it on every run.
+  outputDir: './test-results',
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
@@ -56,9 +58,10 @@ export default defineConfig({
 
   reporter: [
     ['list'],
-    ['html', { outputFolder: 'reports/html', open: 'never' }],
+    ['html', { outputFolder: 'reports', open: 'never' }],
     // Step-by-step view for cross-checking against the manual test case. Single
-    // file with the screenshots embedded, so it opens without a server.
+    // file with the screenshots embedded, so it opens without a server. Listed
+    // after 'html' so it is written after that reporter has reset reports/.
     ['./src/report/stepReporter.js', { outputFile: 'reports/step-report.html' }],
   ],
 

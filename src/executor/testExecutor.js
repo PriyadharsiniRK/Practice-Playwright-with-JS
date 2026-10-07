@@ -8,7 +8,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { ErrorCode, PipelineError } from '../errors.js';
 
-const REPORT_PATH = path.join('reports', 'html', 'index.html');
+const REPORT_PATH = path.join('reports', 'index.html');
 
 /**
  * `playwright test <file>` treats its arguments as regular expressions matched
