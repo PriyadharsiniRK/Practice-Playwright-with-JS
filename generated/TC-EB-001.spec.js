@@ -6,9 +6,6 @@
 //   source    : input/EB-tests.docx
 //   analyzer  : heuristic
 //   screenshots: one per step
-//   WARNING: this test case states no expected result as a step, so the
-//            test passes whenever the steps merely execute. Add a
-//            "Verify ..." step to the manual test case to check it.
 // Re-run `npm run generate` after editing the manual test case.
 // ---------------------------------------------------------------------------
 
@@ -45,5 +42,10 @@ test('TC-EB-001 - Login into EB Website', async ({ page }, testInfo) => {
   await test.step('Step 6: Click on Download in English button', async () => {
     await page.getByRole('button', { name: /download\s*(in\s*)?english/i }).click();
     await testInfo.attach('Step 6', { body: await page.screenshot(), contentType: 'image/png' });
+  });
+
+  await test.step('Step 7: Verify that the invoice summary is visible', async () => {
+    await expect(page.locator('.invoice-summary')).toBeVisible();
+    await testInfo.attach('Step 7', { body: await page.screenshot(), contentType: 'image/png' });
   });
 });

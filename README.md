@@ -537,6 +537,11 @@ already knows needs nothing else. A new UI element needs one data entry in
 The pipeline refuses to produce automation it cannot stand behind. Every
 failure carries a stable code and a non-zero exit status.
 
+When a document holds several test cases, one that cannot be automated is
+reported and skipped, and the rest are still generated. Any older spec for the
+skipped test case is deleted so it cannot keep running under that id, and the
+command still exits with code 1.
+
 | Code | Raised when |
 | --- | --- |
 | `INVALID_TEST_CASE` | the document is malformed, or the requested id does not exist |
