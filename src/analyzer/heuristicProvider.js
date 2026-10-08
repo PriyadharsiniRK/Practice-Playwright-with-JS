@@ -40,6 +40,12 @@ const PRESS = /\bpress\b\s+(?:the\s+)?["']?(enter|return|escape|tab|arrow\w+|spa
 const ASSERT = /^(verify|check|assert|validate|ensure|confirm|the\s+\w+\s+should)\b/i;
 const BACK = /\b(navigate|go)\s+back\b|\bpress\s+back\b|\bbrowser\s+back\b/i;
 const FORWARD = /\b(navigate|go)\s+forward\b|\bpress\s+forward\b|\bbrowser\s+forward\b/i;
+/**
+ * "Close the cookie consent dialog if it is displayed" - an optional pop-up.
+ * Checked before CLICK: closing something that may not be there is not a click
+ * that must succeed.
+ */
+const DISMISS = /^(close|dismiss|accept|reject|decline)\b.*\b(dialog|pop-?up|banner|consent|cookies?|overlay)\b/i;
 /** "Clear the search box" - emptying a field is not the same as filling it. */
 const CLEAR = /^(clear|empty|erase)\b/i;
 /**
@@ -240,6 +246,13 @@ export function createHeuristicProvider() {
 
       if (BACK.test(text)) {
         return { ...base, action: 'GO_BACK', target: null, value: null };
+      }
+
+      if (DISMISS.test(text)) {
+        const popup = text
+          .replace(/^(close|dismiss|accept|reject|decline)\s+/i, '')
+          .replace(/\s+(if|when)\b.*$/i, '');
+        return { ...base, action: 'DISMISS', target: target(popup), value: null };
       }
 
       if (CLEAR.test(text)) {

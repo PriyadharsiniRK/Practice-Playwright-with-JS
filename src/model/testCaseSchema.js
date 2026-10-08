@@ -19,6 +19,7 @@ export const ACTIONS = [
   'CLEAR',
   'PRESS',
   'SELECT',
+  'DISMISS',
   'ASSERT_VISIBLE',
   'ASSERT_HIDDEN',
   'ASSERT_TEXT',

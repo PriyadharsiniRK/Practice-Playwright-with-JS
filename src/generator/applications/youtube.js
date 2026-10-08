@@ -9,6 +9,20 @@
  * one and registering it in ./index.js.
  */
 
+/**
+ * The buttons that close YouTube's cookie consent, in English and the common
+ * EU languages YouTube may show it in. "Reject all" comes first in the dialog,
+ * so it is the one clicked when both are present.
+ */
+const CONSENT_BUTTON_TEXT = {
+  source:
+    'reject all|accept all|alle ablehnen|alle akzeptieren|tout refuser|tout accepter|' +
+    'rechazar todo|aceptar todo|rifiuta tutto|accetta tutto|alles afwijzen|alles accepteren|' +
+    'avvisa alla|godkänn alla|afvis alle|accepter alle|avvis alle|godta alle|' +
+    'hylkää kaikki|hyväksy kaikki|odrzuć wszystko|zaakceptuj wszystko|rejeitar tudo|aceitar tudo',
+  flags: 'i',
+};
+
 export const youtube = {
   id: 'youtube',
   name: 'YouTube',
@@ -17,6 +31,19 @@ export const youtube = {
   baseUrl: 'https://www.youtube.com',
 
   targets: [
+    {
+      // The dialog itself has no box of its own, so the target is the button
+      // that closes it - on the dialog over the page and on consent.youtube.com.
+      id: 'youtube.consentDialog',
+      description: 'cookie consent dialog',
+      match: [/\b(cookie|consent)\b/i],
+      spec: {
+        kind: 'css',
+        selector: 'ytd-consent-bump-v2-lightbox button, form[action*="consent.youtube.com"] button',
+        hasText: CONSENT_BUTTON_TEXT,
+        nth: 'first',
+      },
+    },
     {
       id: 'youtube.searchBox',
       description: 'YouTube search box',
@@ -167,43 +194,4 @@ export const youtube = {
     { match: /\b(video|watch)\s+page\s+(is\s+)?(displayed|shown|loaded|open)/i, action: 'ASSERT_URL', value: '/watch' },
     { match: /\b(home\s*page|homepage)\s+(is\s+)?(displayed|shown|loaded)/i, action: 'ASSERT_TITLE', value: 'YouTube' },
   ],
-
-  /**
-   * Things the live site can put in front of the page at any moment, which no
-   * manual test case mentions because a human just closes them. Every
-   * generated YouTube test registers a page.addLocatorHandler() for each, so
-   * Playwright dismisses it before any action or assertion it would block.
-   *
-   * In regions with cookie-consent rules (EU/EEA, UK, ...) YouTube shows its
-   * consent either as a dialog over the page or as a separate page on
-   * consent.youtube.com. "Reject all" is clicked when present (it comes first
-   * in the dialog), otherwise "Accept all".
-   *
-   * The handler is keyed on the dismiss button, not on the dialog element:
-   * <ytd-consent-bump-v2-lightbox> has no box of its own (its dialog child is
-   * drawn position:fixed), so Playwright never considers it visible and a
-   * handler keyed on it would never run.
-   */
-  interruptions: [
-    // Backup only: the consent cookie below normally stops the dialog from
-    // appearing at all. These catch it if YouTube shows it anyway.
-    {
-      description: 'cookie consent dialog',
-      dismiss: { selector: 'ytd-consent-bump-v2-lightbox button', text: { source: 'reject all|accept all', flags: 'i' } },
-    },
-    {
-      description: 'cookie consent page',
-      dismiss: { selector: 'form[action*="consent.youtube.com"] button', text: { source: 'reject all|accept all', flags: 'i' } },
-    },
-  ],
-
-  /**
-   * Cookies set in the browser before the test opens the site.
-   *
-   * SOCS=CAI is the cookie YouTube itself stores when a visitor clicks
-   * "Reject all" on the consent dialog. With it present the dialog is never
-   * shown, whatever language it would have been in, so no step has to
-   * dismiss it. (The same technique is used by yt-dlp.)
-   */
-  cookies: [{ name: 'SOCS', value: 'CAI', domain: '.youtube.com', path: '/' }],
 };

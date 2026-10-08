@@ -54,6 +54,7 @@ export function emitLocator(spec) {
     default:
       throw new PipelineError(ErrorCode.GENERATION_FAILED, `Unknown locator strategy "${spec.kind}".`);
   }
+  if (spec.hasText) expression += `.filter({ hasText: ${regexLiteral(spec.hasText)} })`;
   if (spec.nth === 'first') expression += '.first()';
   else if (spec.nth === 'last') expression += '.last()';
   else if (typeof spec.nth === 'number') expression += `.nth(${spec.nth})`;
@@ -89,6 +90,17 @@ function emitStep(step, options) {
       break;
     case 'CLICK':
       lines.push(`await ${locatorFor()}.click();`);
+      break;
+    case 'DISMISS':
+      // An optional pop-up (cookie consent and the like): shown in some regions
+      // or on some visits only. Close it when it appears; carry on when not.
+      lines.push(
+        `const closeButton = ${locatorFor()};`,
+        `if (await closeButton.waitFor({ timeout: 10_000 }).then(() => true, () => false)) {`,
+        `${INDENT}await closeButton.click();`,
+        `${INDENT}await closeButton.waitFor({ state: 'hidden' });`,
+        '}',
+      );
       break;
     case 'FILL': {
       if (step.value == null) {
@@ -275,35 +287,6 @@ export function generateSpec(testCase, options = {}) {
   ].filter((line) => line !== null);
 
   const body = [];
-
-  // Cookies the application needs before its site is opened, such as a stored
-  // cookie-consent choice so the consent dialog never appears.
-  if (application.cookies?.length) {
-    body.push(
-      `${INDENT}// Store the site's cookie-consent choice up front, so its consent dialog is not shown.`,
-      `${INDENT}await page.context().addCookies([`,
-      ...application.cookies.map(
-        (cookie) =>
-          `${INDENT}${INDENT}{ ${Object.entries(cookie).map(([key, value]) => `${key}: ${quote(value)}`).join(', ')} },`,
-      ),
-      `${INDENT}]);`,
-    );
-  }
-
-  // Dialogs the live site can show at any moment (cookie consent and the like).
-  // Playwright runs the handler whenever the dismiss button is visible before
-  // an action or assertion, so no manual step has to mention it.
-  for (const interruption of application.interruptions ?? []) {
-    body.push(
-      `${INDENT}// The live site can show a ${interruption.description}; dismiss it whenever it appears.`,
-      `${INDENT}await page.addLocatorHandler(`,
-      `${INDENT}${INDENT}page.locator(${quote(interruption.dismiss.selector)})` +
-        `.filter({ hasText: ${regexLiteral(interruption.dismiss.text)} }).first(),`,
-      `${INDENT}${INDENT}(button) => button.click(),`,
-      `${INDENT});`,
-    );
-  }
-  if (application.cookies?.length || application.interruptions?.length) body.push('');
 
   if (canonical.preconditions?.length) {
     body.push(...canonical.preconditions.map((precondition) => `${INDENT}// Precondition: ${precondition}`), '');

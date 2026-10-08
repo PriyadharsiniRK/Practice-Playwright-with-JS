@@ -85,36 +85,27 @@ test('a toggle is asserted by the label it now shows', async () => {
   assert.equal(catalogId(canonical.steps[0]), 'youtube.muteButton');
 });
 
-test('every YouTube spec dismisses the cookie consent dialog and page before any step', () => {
-  const { code } = generateSpec({
-    id: 'TC-YT-CONSENT',
-    title: 'Consent',
-    application: 'youtube',
-    steps: [{ stepNumber: 1, originalText: 'Open https://www.youtube.com', action: 'NAVIGATE', value: 'https://www.youtube.com' }],
-  });
-  // Keyed on the visible dismiss button: the lightbox element itself has no
-  // box, so a handler keyed on it never runs on the live site.
-  const handler = code.indexOf("page.locator('ytd-consent-bump-v2-lightbox button').filter({ hasText: /reject all|accept all/i }).first(),");
-  assert.ok(handler > 0, 'consent dialog handler missing');
-  assert.match(code, /page\.locator\('form\[action\*="consent\.youtube\.com"\] button'\)\.filter/);
-  assert.match(code, /\(button\) => button\.click\(\)/);
-  assert.doesNotMatch(code, /page\.locator\('ytd-consent-bump-v2-lightbox'\)/);
-  // The stored "Reject all" choice is set before the first step, so the
-  // dialog is normally never shown at all.
-  const cookie = code.indexOf("{ name: 'SOCS', value: 'CAI', domain: '.youtube.com', path: '/' },");
-  assert.ok(cookie > 0, 'consent cookie missing');
-  assert.ok(cookie < code.indexOf("test.step('Step 1"));
-  // Registered before the first step runs.
-  assert.ok(handler < code.indexOf("test.step('Step 1"));
-});
+test('"Close the cookie consent dialog if it is displayed" is an optional DISMISS step', async () => {
+  const canonical = await analyzeTestCase(
+    {
+      id: 'TC-YT-CONSENT',
+      title: 'Consent',
+      steps: [
+        { stepNumber: 1, text: 'Open https://www.youtube.com' },
+        { stepNumber: 2, text: 'Close the cookie consent dialog if it is displayed' },
+      ],
+    },
+    { provider: createProvider('heuristic') },
+  );
+  assert.equal(canonical.steps[1].action, 'DISMISS');
+  assert.equal(resolveTarget(canonical.steps[1].target, applicationById('youtube')).catalogId, 'youtube.consentDialog');
 
-test('applications without interruptions get no locator handler', () => {
-  const { code } = generateSpec({
-    id: 'TC-OHRM-PLAIN',
-    title: 'Plain',
-    application: 'orangehrm',
-    steps: [{ stepNumber: 1, originalText: 'Open the site', action: 'NAVIGATE', value: 'https://opensource-demo.orangehrmlive.com' }],
-  });
-  assert.doesNotMatch(code, /addLocatorHandler/);
-  assert.doesNotMatch(code, /addCookies/);
+  const { code } = generateSpec(canonical, { screenshots: false });
+  // Keyed on the close button: the <ytd-consent-bump-v2-lightbox> element has
+  // no box of its own, so Playwright never considers the dialog itself visible.
+  assert.match(code, /page\.locator\('ytd-consent-bump-v2-lightbox button, form\[action\*="consent\.youtube\.com"\] button'\)/);
+  assert.match(code, /\.filter\(\{ hasText: \/reject all\|accept all\|/);
+  // Optional: clicks only when the dialog appears, never fails when it does not.
+  assert.match(code, /if \(await closeButton\.waitFor\(\{ timeout: 10_000 \}\)\.then\(\(\) => true, \(\) => false\)\) \{/);
+  assert.match(code, /await closeButton\.click\(\);/);
 });

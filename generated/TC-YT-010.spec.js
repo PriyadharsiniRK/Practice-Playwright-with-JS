@@ -12,21 +12,6 @@
 import { test, expect } from '@playwright/test';
 
 test('TC-YT-010 - The homepage shows no video player', async ({ page }, testInfo) => {
-  // Store the site's cookie-consent choice up front, so its consent dialog is not shown.
-  await page.context().addCookies([
-    { name: 'SOCS', value: 'CAI', domain: '.youtube.com', path: '/' },
-  ]);
-  // The live site can show a cookie consent dialog; dismiss it whenever it appears.
-  await page.addLocatorHandler(
-    page.locator('ytd-consent-bump-v2-lightbox button').filter({ hasText: /reject all|accept all/i }).first(),
-    (button) => button.click(),
-  );
-  // The live site can show a cookie consent page; dismiss it whenever it appears.
-  await page.addLocatorHandler(
-    page.locator('form[action*="consent.youtube.com"] button').filter({ hasText: /reject all|accept all/i }).first(),
-    (button) => button.click(),
-  );
-
   // Precondition: User has internet access.
 
   await test.step('Step 1: Open https://www.youtube.com', async () => {
@@ -34,13 +19,22 @@ test('TC-YT-010 - The homepage shows no video player', async ({ page }, testInfo
     await testInfo.attach('Step 1', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 2: Verify that the YouTube logo is visible', async () => {
-    await expect(page.getByRole('link', { name: /youtube home/i })).toBeVisible();
+  await test.step('Step 2: Close the cookie consent dialog if it is displayed', async () => {
+    const closeButton = page.locator('ytd-consent-bump-v2-lightbox button, form[action*="consent.youtube.com"] button').filter({ hasText: /reject all|accept all|alle ablehnen|alle akzeptieren|tout refuser|tout accepter|rechazar todo|aceptar todo|rifiuta tutto|accetta tutto|alles afwijzen|alles accepteren|avvisa alla|godkänn alla|afvis alle|accepter alle|avvis alle|godta alle|hylkää kaikki|hyväksy kaikki|odrzuć wszystko|zaakceptuj wszystko|rejeitar tudo|aceitar tudo/i }).first();
+    if (await closeButton.waitFor({ timeout: 10_000 }).then(() => true, () => false)) {
+      await closeButton.click();
+      await closeButton.waitFor({ state: 'hidden' });
+    }
     await testInfo.attach('Step 2', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 3: Verify that the video player is not visible', async () => {
-    await expect(page.locator('#movie_player')).toBeHidden();
+  await test.step('Step 3: Verify that the YouTube logo is visible', async () => {
+    await expect(page.getByRole('link', { name: /youtube home/i })).toBeVisible();
     await testInfo.attach('Step 3', { body: await page.screenshot(), contentType: 'image/png' });
+  });
+
+  await test.step('Step 4: Verify that the video player is not visible', async () => {
+    await expect(page.locator('#movie_player')).toBeHidden();
+    await testInfo.attach('Step 4', { body: await page.screenshot(), contentType: 'image/png' });
   });
 });

@@ -12,21 +12,6 @@
 import { test, expect } from '@playwright/test';
 
 test('TC-YT-012 - Open a video then return to the homepage', async ({ page }, testInfo) => {
-  // Store the site's cookie-consent choice up front, so its consent dialog is not shown.
-  await page.context().addCookies([
-    { name: 'SOCS', value: 'CAI', domain: '.youtube.com', path: '/' },
-  ]);
-  // The live site can show a cookie consent dialog; dismiss it whenever it appears.
-  await page.addLocatorHandler(
-    page.locator('ytd-consent-bump-v2-lightbox button').filter({ hasText: /reject all|accept all/i }).first(),
-    (button) => button.click(),
-  );
-  // The live site can show a cookie consent page; dismiss it whenever it appears.
-  await page.addLocatorHandler(
-    page.locator('form[action*="consent.youtube.com"] button').filter({ hasText: /reject all|accept all/i }).first(),
-    (button) => button.click(),
-  );
-
   // Precondition: User has internet access.
 
   await test.step('Step 1: Open https://www.youtube.com', async () => {
@@ -34,38 +19,47 @@ test('TC-YT-012 - Open a video then return to the homepage', async ({ page }, te
     await testInfo.attach('Step 1', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 2: Enter "Playwright testing tutorial" in the search box', async () => {
-    await page.getByRole('combobox', { name: /search/i }).fill('Playwright testing tutorial');
+  await test.step('Step 2: Close the cookie consent dialog if it is displayed', async () => {
+    const closeButton = page.locator('ytd-consent-bump-v2-lightbox button, form[action*="consent.youtube.com"] button').filter({ hasText: /reject all|accept all|alle ablehnen|alle akzeptieren|tout refuser|tout accepter|rechazar todo|aceptar todo|rifiuta tutto|accetta tutto|alles afwijzen|alles accepteren|avvisa alla|godkänn alla|afvis alle|accepter alle|avvis alle|godta alle|hylkää kaikki|hyväksy kaikki|odrzuć wszystko|zaakceptuj wszystko|rejeitar tudo|aceitar tudo/i }).first();
+    if (await closeButton.waitFor({ timeout: 10_000 }).then(() => true, () => false)) {
+      await closeButton.click();
+      await closeButton.waitFor({ state: 'hidden' });
+    }
     await testInfo.attach('Step 2', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 3: Press Enter', async () => {
-    await page.keyboard.press('Enter');
+  await test.step('Step 3: Enter "Playwright testing tutorial" in the search box', async () => {
+    await page.getByRole('combobox', { name: /search/i }).fill('Playwright testing tutorial');
     await testInfo.attach('Step 3', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 4: Click the first search result', async () => {
-    await page.locator('ytd-video-renderer').first().click();
+  await test.step('Step 4: Press Enter', async () => {
+    await page.keyboard.press('Enter');
     await testInfo.attach('Step 4', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 5: Verify that the video page is displayed', async () => {
-    await expect(page).toHaveURL(/\/watch/i);
+  await test.step('Step 5: Click the first search result', async () => {
+    await page.locator('ytd-video-renderer').first().click();
     await testInfo.attach('Step 5', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 6: Click the YouTube logo', async () => {
-    await page.getByRole('link', { name: /youtube home/i }).click();
+  await test.step('Step 6: Verify that the video page is displayed', async () => {
+    await expect(page).toHaveURL(/\/watch/i);
     await testInfo.attach('Step 6', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 7: Verify that the search box is visible', async () => {
-    await expect(page.getByRole('combobox', { name: /search/i })).toBeVisible();
+  await test.step('Step 7: Click the YouTube logo', async () => {
+    await page.getByRole('link', { name: /youtube home/i }).click();
     await testInfo.attach('Step 7', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 8: Verify that the video player is not visible', async () => {
-    await expect(page.locator('#movie_player')).toBeHidden();
+  await test.step('Step 8: Verify that the search box is visible', async () => {
+    await expect(page.getByRole('combobox', { name: /search/i })).toBeVisible();
     await testInfo.attach('Step 8', { body: await page.screenshot(), contentType: 'image/png' });
+  });
+
+  await test.step('Step 9: Verify that the video player is not visible', async () => {
+    await expect(page.locator('#movie_player')).toBeHidden();
+    await testInfo.attach('Step 9', { body: await page.screenshot(), contentType: 'image/png' });
   });
 });
