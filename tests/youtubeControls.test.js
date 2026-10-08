@@ -84,3 +84,28 @@ test('a toggle is asserted by the label it now shows', async () => {
   assert.equal(canonical.steps[0].value, 'Unmute');
   assert.equal(catalogId(canonical.steps[0]), 'youtube.muteButton');
 });
+
+test('every YouTube spec dismisses the cookie consent dialog and page before any step', () => {
+  const { code } = generateSpec({
+    id: 'TC-YT-CONSENT',
+    title: 'Consent',
+    application: 'youtube',
+    steps: [{ stepNumber: 1, originalText: 'Open https://www.youtube.com', action: 'NAVIGATE', value: 'https://www.youtube.com' }],
+  });
+  const handler = code.indexOf("page.addLocatorHandler(page.locator('ytd-consent-bump-v2-lightbox').first()");
+  assert.ok(handler > 0, 'consent dialog handler missing');
+  assert.match(code, /page\.addLocatorHandler\(page\.locator\('form\[action\*="consent\.youtube\.com"\]'\)\.first\(\)/);
+  assert.match(code, /\.filter\(\{ hasText: \/reject all\|accept all\/i \}\)\.first\(\)\.click\(\)/);
+  // Registered before the first step runs.
+  assert.ok(handler < code.indexOf("test.step('Step 1"));
+});
+
+test('applications without interruptions get no locator handler', () => {
+  const { code } = generateSpec({
+    id: 'TC-OHRM-PLAIN',
+    title: 'Plain',
+    application: 'orangehrm',
+    steps: [{ stepNumber: 1, originalText: 'Open the site', action: 'NAVIGATE', value: 'https://opensource-demo.orangehrmlive.com' }],
+  });
+  assert.doesNotMatch(code, /addLocatorHandler/);
+});

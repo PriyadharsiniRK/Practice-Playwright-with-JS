@@ -167,4 +167,28 @@ export const youtube = {
     { match: /\b(video|watch)\s+page\s+(is\s+)?(displayed|shown|loaded|open)/i, action: 'ASSERT_URL', value: '/watch' },
     { match: /\b(home\s*page|homepage)\s+(is\s+)?(displayed|shown|loaded)/i, action: 'ASSERT_TITLE', value: 'YouTube' },
   ],
+
+  /**
+   * Things the live site can put in front of the page at any moment, which no
+   * manual test case mentions because a human just closes them. Every
+   * generated YouTube test registers a page.addLocatorHandler() for each, so
+   * Playwright dismisses it before any action or assertion it would block.
+   *
+   * In regions with cookie-consent rules (EU/EEA, UK, ...) YouTube shows its
+   * consent either as a dialog over the page or as a separate page on
+   * consent.youtube.com. "Reject all" is clicked when present (it comes first
+   * in the dialog), otherwise "Accept all".
+   */
+  interruptions: [
+    {
+      description: 'cookie consent dialog',
+      overlay: 'ytd-consent-bump-v2-lightbox',
+      dismiss: { selector: 'ytd-consent-bump-v2-lightbox button', text: { source: 'reject all|accept all', flags: 'i' } },
+    },
+    {
+      description: 'cookie consent page',
+      overlay: 'form[action*="consent.youtube.com"]',
+      dismiss: { selector: 'form[action*="consent.youtube.com"] button', text: { source: 'reject all|accept all', flags: 'i' } },
+    },
+  ],
 };

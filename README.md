@@ -635,6 +635,14 @@ failed generated test can be debugged like a hand-written one.
 * **Real sites, not mocks.** Generated tests run against the live
   application, so a green report means the real page behaved as the manual
   test case says.
+* **Interruptions are the framework's job, not the tester's.** A manual test
+  case never says "close the cookie banner", because a person just does it.
+  An application declares the dialogs its live site can show
+  (`interruptions` in `src/generator/applications/youtube.js`), and every
+  generated test registers a `page.addLocatorHandler()` for each. YouTube's
+  cookie-consent dialog and consent page, shown in the EU/EEA, the UK and
+  other regions, are dismissed with "Reject all" whenever they appear, before
+  any step they would block.
 
 ---
 
@@ -651,9 +659,10 @@ failed generated test can be debugged like a hand-written one.
   role and accessible name.
 * Steps are interpreted independently; there is no cross-step state beyond the
   test case title supplied as context.
-* Tests need an internet connection. Live sites change: YouTube's consent page
-  (shown in some regions), A/B-tested markup and locale differences can break a
-  curated selector. Run with `--headed` to see what happened, and use
+* Tests need an internet connection. Live sites change: A/B-tested markup,
+  locale differences, or a new kind of pop-up can break a curated selector.
+  The consent handler expects the English "Reject all" / "Accept all" labels
+  (the tests run with `locale: 'en-US'`). Run with `--headed` to see what happened, and use
   `npm run names -- "<url>"` to read the live accessible names when a selector
   needs updating.
 * The CarInfo and TNEB selectors have not yet been verified against the live
