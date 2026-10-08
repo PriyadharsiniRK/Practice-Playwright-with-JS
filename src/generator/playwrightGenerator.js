@@ -277,15 +277,16 @@ export function generateSpec(testCase, options = {}) {
   const body = [];
 
   // Dialogs the live site can show at any moment (cookie consent and the like).
-  // Playwright runs the handler whenever the overlay is visible before an
-  // action or assertion, so no manual step has to mention it.
+  // Playwright runs the handler whenever the dismiss button is visible before
+  // an action or assertion, so no manual step has to mention it.
   for (const interruption of application.interruptions ?? []) {
     body.push(
       `${INDENT}// The live site can show a ${interruption.description}; dismiss it whenever it appears.`,
-      `${INDENT}await page.addLocatorHandler(page.locator(${quote(interruption.overlay)}).first(), async () => {`,
-      `${INDENT}${INDENT}await page.locator(${quote(interruption.dismiss.selector)})` +
-        `.filter({ hasText: ${regexLiteral(interruption.dismiss.text)} }).first().click();`,
-      `${INDENT}});`,
+      `${INDENT}await page.addLocatorHandler(`,
+      `${INDENT}${INDENT}page.locator(${quote(interruption.dismiss.selector)})` +
+        `.filter({ hasText: ${regexLiteral(interruption.dismiss.text)} }).first(),`,
+      `${INDENT}${INDENT}(button) => button.click(),`,
+      `${INDENT});`,
     );
   }
   if (application.interruptions?.length) body.push('');

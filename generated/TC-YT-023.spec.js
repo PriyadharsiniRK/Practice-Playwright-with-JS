@@ -13,13 +13,15 @@ import { test, expect } from '@playwright/test';
 
 test('TC-YT-023 - Toggle full screen', async ({ page }, testInfo) => {
   // The live site can show a cookie consent dialog; dismiss it whenever it appears.
-  await page.addLocatorHandler(page.locator('ytd-consent-bump-v2-lightbox').first(), async () => {
-    await page.locator('ytd-consent-bump-v2-lightbox button').filter({ hasText: /reject all|accept all/i }).first().click();
-  });
+  await page.addLocatorHandler(
+    page.locator('ytd-consent-bump-v2-lightbox button').filter({ hasText: /reject all|accept all/i }).first(),
+    (button) => button.click(),
+  );
   // The live site can show a cookie consent page; dismiss it whenever it appears.
-  await page.addLocatorHandler(page.locator('form[action*="consent.youtube.com"]').first(), async () => {
-    await page.locator('form[action*="consent.youtube.com"] button').filter({ hasText: /reject all|accept all/i }).first().click();
-  });
+  await page.addLocatorHandler(
+    page.locator('form[action*="consent.youtube.com"] button').filter({ hasText: /reject all|accept all/i }).first(),
+    (button) => button.click(),
+  );
 
   // Precondition: User has internet access.
 

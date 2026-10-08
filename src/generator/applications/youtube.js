@@ -178,16 +178,19 @@ export const youtube = {
    * consent either as a dialog over the page or as a separate page on
    * consent.youtube.com. "Reject all" is clicked when present (it comes first
    * in the dialog), otherwise "Accept all".
+   *
+   * The handler is keyed on the dismiss button, not on the dialog element:
+   * <ytd-consent-bump-v2-lightbox> has no box of its own (its dialog child is
+   * drawn position:fixed), so Playwright never considers it visible and a
+   * handler keyed on it would never run.
    */
   interruptions: [
     {
       description: 'cookie consent dialog',
-      overlay: 'ytd-consent-bump-v2-lightbox',
       dismiss: { selector: 'ytd-consent-bump-v2-lightbox button', text: { source: 'reject all|accept all', flags: 'i' } },
     },
     {
       description: 'cookie consent page',
-      overlay: 'form[action*="consent.youtube.com"]',
       dismiss: { selector: 'form[action*="consent.youtube.com"] button', text: { source: 'reject all|accept all', flags: 'i' } },
     },
   ],

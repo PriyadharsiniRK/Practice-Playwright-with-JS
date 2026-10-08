@@ -92,10 +92,13 @@ test('every YouTube spec dismisses the cookie consent dialog and page before any
     application: 'youtube',
     steps: [{ stepNumber: 1, originalText: 'Open https://www.youtube.com', action: 'NAVIGATE', value: 'https://www.youtube.com' }],
   });
-  const handler = code.indexOf("page.addLocatorHandler(page.locator('ytd-consent-bump-v2-lightbox').first()");
+  // Keyed on the visible dismiss button: the lightbox element itself has no
+  // box, so a handler keyed on it never runs on the live site.
+  const handler = code.indexOf("page.locator('ytd-consent-bump-v2-lightbox button').filter({ hasText: /reject all|accept all/i }).first(),");
   assert.ok(handler > 0, 'consent dialog handler missing');
-  assert.match(code, /page\.addLocatorHandler\(page\.locator\('form\[action\*="consent\.youtube\.com"\]'\)\.first\(\)/);
-  assert.match(code, /\.filter\(\{ hasText: \/reject all\|accept all\/i \}\)\.first\(\)\.click\(\)/);
+  assert.match(code, /page\.locator\('form\[action\*="consent\.youtube\.com"\] button'\)\.filter/);
+  assert.match(code, /\(button\) => button\.click\(\)/);
+  assert.doesNotMatch(code, /page\.locator\('ytd-consent-bump-v2-lightbox'\)/);
   // Registered before the first step runs.
   assert.ok(handler < code.indexOf("test.step('Step 1"));
 });
