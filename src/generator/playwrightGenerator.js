@@ -276,6 +276,20 @@ export function generateSpec(testCase, options = {}) {
 
   const body = [];
 
+  // Cookies the application needs before its site is opened, such as a stored
+  // cookie-consent choice so the consent dialog never appears.
+  if (application.cookies?.length) {
+    body.push(
+      `${INDENT}// Store the site's cookie-consent choice up front, so its consent dialog is not shown.`,
+      `${INDENT}await page.context().addCookies([`,
+      ...application.cookies.map(
+        (cookie) =>
+          `${INDENT}${INDENT}{ ${Object.entries(cookie).map(([key, value]) => `${key}: ${quote(value)}`).join(', ')} },`,
+      ),
+      `${INDENT}]);`,
+    );
+  }
+
   // Dialogs the live site can show at any moment (cookie consent and the like).
   // Playwright runs the handler whenever the dismiss button is visible before
   // an action or assertion, so no manual step has to mention it.
@@ -289,7 +303,7 @@ export function generateSpec(testCase, options = {}) {
       `${INDENT});`,
     );
   }
-  if (application.interruptions?.length) body.push('');
+  if (application.cookies?.length || application.interruptions?.length) body.push('');
 
   if (canonical.preconditions?.length) {
     body.push(...canonical.preconditions.map((precondition) => `${INDENT}// Precondition: ${precondition}`), '');

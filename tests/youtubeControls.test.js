@@ -99,6 +99,11 @@ test('every YouTube spec dismisses the cookie consent dialog and page before any
   assert.match(code, /page\.locator\('form\[action\*="consent\.youtube\.com"\] button'\)\.filter/);
   assert.match(code, /\(button\) => button\.click\(\)/);
   assert.doesNotMatch(code, /page\.locator\('ytd-consent-bump-v2-lightbox'\)/);
+  // The stored "Reject all" choice is set before the first step, so the
+  // dialog is normally never shown at all.
+  const cookie = code.indexOf("{ name: 'SOCS', value: 'CAI', domain: '.youtube.com', path: '/' },");
+  assert.ok(cookie > 0, 'consent cookie missing');
+  assert.ok(cookie < code.indexOf("test.step('Step 1"));
   // Registered before the first step runs.
   assert.ok(handler < code.indexOf("test.step('Step 1"));
 });
@@ -111,4 +116,5 @@ test('applications without interruptions get no locator handler', () => {
     steps: [{ stepNumber: 1, originalText: 'Open the site', action: 'NAVIGATE', value: 'https://opensource-demo.orangehrmlive.com' }],
   });
   assert.doesNotMatch(code, /addLocatorHandler/);
+  assert.doesNotMatch(code, /addCookies/);
 });

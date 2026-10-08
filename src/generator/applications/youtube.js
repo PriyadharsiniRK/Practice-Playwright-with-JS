@@ -185,6 +185,8 @@ export const youtube = {
    * handler keyed on it would never run.
    */
   interruptions: [
+    // Backup only: the consent cookie below normally stops the dialog from
+    // appearing at all. These catch it if YouTube shows it anyway.
     {
       description: 'cookie consent dialog',
       dismiss: { selector: 'ytd-consent-bump-v2-lightbox button', text: { source: 'reject all|accept all', flags: 'i' } },
@@ -194,4 +196,14 @@ export const youtube = {
       dismiss: { selector: 'form[action*="consent.youtube.com"] button', text: { source: 'reject all|accept all', flags: 'i' } },
     },
   ],
+
+  /**
+   * Cookies set in the browser before the test opens the site.
+   *
+   * SOCS=CAI is the cookie YouTube itself stores when a visitor clicks
+   * "Reject all" on the consent dialog. With it present the dialog is never
+   * shown, whatever language it would have been in, so no step has to
+   * dismiss it. (The same technique is used by yt-dlp.)
+   */
+  cookies: [{ name: 'SOCS', value: 'CAI', domain: '.youtube.com', path: '/' }],
 };

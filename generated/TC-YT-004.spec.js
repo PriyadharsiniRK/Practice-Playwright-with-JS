@@ -12,6 +12,10 @@
 import { test, expect } from '@playwright/test';
 
 test('TC-YT-004 - Search, open a video and go back to the results', async ({ page }, testInfo) => {
+  // Store the site's cookie-consent choice up front, so its consent dialog is not shown.
+  await page.context().addCookies([
+    { name: 'SOCS', value: 'CAI', domain: '.youtube.com', path: '/' },
+  ]);
   // The live site can show a cookie consent dialog; dismiss it whenever it appears.
   await page.addLocatorHandler(
     page.locator('ytd-consent-bump-v2-lightbox button').filter({ hasText: /reject all|accept all/i }).first(),

@@ -639,10 +639,11 @@ failed generated test can be debugged like a hand-written one.
   case never says "close the cookie banner", because a person just does it.
   An application declares the dialogs its live site can show
   (`interruptions` in `src/generator/applications/youtube.js`), and every
-  generated test registers a `page.addLocatorHandler()` for each. YouTube's
-  cookie-consent dialog and consent page, shown in the EU/EEA, the UK and
-  other regions, are dismissed with "Reject all" whenever they appear, before
-  any step they would block.
+  generated test registers a `page.addLocatorHandler()` for each. For
+  YouTube's cookie consent (shown in the EU/EEA, the UK and other regions),
+  each test first stores the "Reject all" choice as the `SOCS=CAI` cookie, so
+  the dialog normally never appears in any language. If it appears anyway, the
+  handler clicks "Reject all" before any step it would block.
 
 ---
 
