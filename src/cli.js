@@ -115,7 +115,15 @@ async function loadTestCases(options) {
   return selected;
 }
 
-/** Stage 3+4: interpret each step into the canonical model. */
+/**
+ * Stage 3+4: interpret each step into the canonical model.
+ *
+ * When a document holds several test cases, one that cannot be automated (an
+ * unsupported step, an unknown element) is reported and skipped rather than
+ * stopping the others. Asking for a single test case still fails outright.
+ *
+ * @returns {Promise<{ analyzed: object[], skipped: { id: string, error: PipelineError }[] }>}
+ */
 async function analyze(rawTestCases, options) {
   const provider = createProvider(options.provider);
   logger.heading(`Analyzing steps... (analyzer: ${provider.name})`);
@@ -124,24 +132,59 @@ async function analyze(rawTestCases, options) {
   }
 
   const analyzed = [];
+  const skipped = [];
   // Test cases that never name the site inherit the one the document names.
   const documentApplication = applicationForDocument(rawTestCases);
   for (const rawTestCase of rawTestCases) {
     if (rawTestCases.length > 1) logger.info(`  ${rawTestCase.id}`);
     const application =
       applicationForTestCase(rawTestCase) ?? documentApplication ?? DEFAULT_APPLICATION;
-    const canonical = await analyzeTestCase(rawTestCase, {
-      provider,
-      application,
-      onStep: (step) => {
-        const detail = describeStep(step, application);
-        logger.step(`Step ${step.stepNumber} → ${step.action}${detail ? `  ${detail}` : ''}`);
-      },
-    });
+    let canonical;
+    try {
+      canonical = await analyzeTestCase(rawTestCase, {
+        provider,
+        application,
+        onStep: (step) => {
+          const detail = describeStep(step, application);
+          logger.step(`Step ${step.stepNumber} → ${step.action}${detail ? `  ${detail}` : ''}`);
+        },
+      });
+    } catch (error) {
+      if (!(error instanceof PipelineError) || rawTestCases.length === 1) throw error;
+      logger.error(`${rawTestCase.id} skipped - ${error.format()}`);
+      logger.blank();
+      skipped.push({ id: rawTestCase.id, error });
+      continue;
+    }
     logger.step(`${rawTestCase.id} → application: ${application.name}`);
     analyzed.push({ raw: rawTestCase, canonical, provider: provider.name });
   }
-  return analyzed;
+  return { analyzed, skipped };
+}
+
+/**
+ * A skipped test case must not leave an older generated spec behind: it would
+ * keep running under that id while no longer matching the manual test case.
+ */
+function removeStaleSpecs(skipped, options) {
+  for (const { id } of skipped) {
+    const filePath = path.join(options.outDir, `${id}.spec.js`);
+    if (fs.existsSync(filePath)) {
+      fs.rmSync(filePath);
+      logger.warn(`Removed ${filePath} - it no longer matches manual test case ${id}.`);
+    }
+  }
+}
+
+/** Summary line for skipped test cases; returns the exit code they imply. */
+function reportSkipped(skipped) {
+  if (skipped.length === 0) return 0;
+  logger.blank();
+  logger.error(
+    `${skipped.length} test case(s) could not be automated and were skipped: ` +
+      `${skipped.map((entry) => `${entry.id} (${entry.error.code})`).join(', ')}`,
+  );
+  return 1;
 }
 
 /** One-line explanation of what the framework decided for a step. */
@@ -207,21 +250,24 @@ async function main() {
     }
     case 'analyze': {
       const cases = await loadTestCases(options);
-      const analyzed = await analyze(cases, options);
+      const { analyzed, skipped } = await analyze(cases, options);
       logger.blank();
       console.log(JSON.stringify(analyzed.map((entry) => entry.canonical), null, 2));
-      return 0;
+      return reportSkipped(skipped);
     }
     case 'generate': {
       const cases = await loadTestCases(options);
-      const analyzed = await analyze(cases, options);
+      const { analyzed, skipped } = await analyze(cases, options);
       generate(analyzed, options);
-      return 0;
+      removeStaleSpecs(skipped, options);
+      return reportSkipped(skipped);
     }
     case 'generate-and-test': {
       const cases = await loadTestCases(options);
-      const analyzed = await analyze(cases, options);
+      const { analyzed, skipped } = await analyze(cases, options);
       const files = generate(analyzed, options);
+      removeStaleSpecs(skipped, options);
+      if (files.length === 0) return reportSkipped(skipped);
 
       logger.heading('Executing test...');
       const { exitCode, reportPath } = await runTests(files, {
@@ -234,7 +280,7 @@ async function main() {
       else logger.error(`${names} failed (Playwright exit code ${exitCode})`);
       logger.heading('Report:');
       logger.info(reportPath);
-      return exitCode;
+      return Math.max(exitCode, reportSkipped(skipped));
     }
     case 'report':
       return showReport();

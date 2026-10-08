@@ -6,13 +6,29 @@
 //   source    : input/EB-tests.docx
 //   analyzer  : heuristic
 //   screenshots: one per step
-//   WARNING: this test case states no expected result as a step, so the
-//            test passes whenever the steps merely execute. Add a
-//            "Verify ..." step to the manual test case to check it.
+//   secrets   : TNEB_CONSUMER_NO, TNEB_MOBILE_NO (from .env - never stored here)
 // Re-run `npm run generate` after editing the manual test case.
 // ---------------------------------------------------------------------------
 
 import { test, expect } from '@playwright/test';
+
+/**
+ * Reads a credential the manual test case referred to by name.
+ *
+ * The value is never written into this file: a generated spec is committed
+ * like any other source. It lives in .env, which is not. Missing means a
+ * loud failure rather than a blank field and a confusing assertion later.
+ */
+const fromEnv = (name) => {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(
+      `${name} is not set. Add it to .env (see .env.example) - the manual test ` +
+      `case refers to this value by name rather than stating it.`,
+    );
+  }
+  return value;
+};
 
 test('TC-EB-001 - Login into EB Website', async ({ page }, testInfo) => {
   // Precondition: User has internet access.
@@ -27,13 +43,13 @@ test('TC-EB-001 - Login into EB Website', async ({ page }, testInfo) => {
     await testInfo.attach('Step 2', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 3: Enter “030460031239” in the Consumer No field', async () => {
-    await page.getByRole('textbox', { name: /consumer\s*(no|number)/i }).fill('030460031239');
+  await test.step('Step 3: Enter “<consumer no>” in the Consumer No field', async () => {
+    await page.getByRole('textbox', { name: /consumer\s*(no|number)/i }).fill(fromEnv('TNEB_CONSUMER_NO'));
     await testInfo.attach('Step 3', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 4: Enter “9843081645”in the Registered Mobile No field', async () => {
-    await page.getByRole('textbox', { name: /mobile\s*(no|number)/i }).fill('9843081645');
+  await test.step('Step 4: Enter “<mobile no>” in the Registered Mobile No field', async () => {
+    await page.getByRole('textbox', { name: /mobile\s*(no|number)/i }).fill(fromEnv('TNEB_MOBILE_NO'));
     await testInfo.attach('Step 4', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
@@ -45,5 +61,10 @@ test('TC-EB-001 - Login into EB Website', async ({ page }, testInfo) => {
   await test.step('Step 6: Click on Download in English button', async () => {
     await page.getByRole('button', { name: /download\s*(in\s*)?english/i }).click();
     await testInfo.attach('Step 6', { body: await page.screenshot(), contentType: 'image/png' });
+  });
+
+  await test.step('Step 7: Verify that the invoice summary is visible', async () => {
+    await expect(page.locator('.invoice-summary')).toBeVisible();
+    await testInfo.attach('Step 7', { body: await page.screenshot(), contentType: 'image/png' });
   });
 });

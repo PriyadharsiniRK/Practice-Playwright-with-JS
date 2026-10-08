@@ -54,6 +54,7 @@ export function emitLocator(spec) {
     default:
       throw new PipelineError(ErrorCode.GENERATION_FAILED, `Unknown locator strategy "${spec.kind}".`);
   }
+  if (spec.hasText) expression += `.filter({ hasText: ${regexLiteral(spec.hasText)} })`;
   if (spec.nth === 'first') expression += '.first()';
   else if (spec.nth === 'last') expression += '.last()';
   else if (typeof spec.nth === 'number') expression += `.nth(${spec.nth})`;
@@ -90,14 +91,22 @@ function emitStep(step, options) {
     case 'CLICK':
       lines.push(`await ${locatorFor()}.click();`);
       break;
+    case 'DISMISS':
+      // An optional pop-up (cookie consent and the like): shown in some regions
+      // or on some visits only. Close it when it appears; carry on when not.
+      lines.push(
+        `const closeButton = ${locatorFor()};`,
+        `if (await closeButton.waitFor({ timeout: 10_000 }).then(() => true, () => false)) {`,
+        `${INDENT}await closeButton.click();`,
+        `${INDENT}await closeButton.waitFor({ state: 'hidden' });`,
+        '}',
+      );
+      break;
     case 'FILL': {
       if (step.value == null) {
         throw new PipelineError(ErrorCode.GENERATION_FAILED, `Step ${step.stepNumber} is a FILL with no value.`);
       }
-      const secret = String(step.value).match(SECRET_PLACEHOLDER);
-      const value = secret
-        ? `fromEnv(${quote(envNameFor(secret[1], options.application))})`
-        : quote(step.value);
+      const value = valueExpression(step.value, options.application) ?? quote(step.value);
       lines.push(`await ${locatorFor()}.fill(${value});`);
       break;
     }
@@ -122,7 +131,9 @@ function emitStep(step, options) {
     case 'ASSERT_TEXT': {
       const expected = step.value ?? step.expected;
       if (!expected) throw unsupportedAssertion(step);
-      lines.push(`await expect(${locatorFor()}).toContainText(${regexLiteral(expected)});`);
+      // A placeholder is matched as plain text: the value is only known at run time.
+      const fromEnvValue = valueExpression(expected, options.application);
+      lines.push(`await expect(${locatorFor()}).toContainText(${fromEnvValue ?? regexLiteral(expected)});`);
       break;
     }
     case 'ASSERT_URL': {
@@ -153,11 +164,20 @@ function emitStep(step, options) {
  * version control too. Instead the generated spec reads it from the environment
  * when it runs, so the value exists only in .env, which is gitignored.
  */
-const SECRET_PLACEHOLDER = /^<([A-Za-z][A-Za-z0-9_]*)>$/;
+const SECRET_PLACEHOLDER = /^<([A-Za-z][A-Za-z0-9_ -]*)>$/;
 
-/** `<password>` in a CarInfo test case -> the CARINFO_PASSWORD variable. */
-const envNameFor = (name, application) =>
-  `${String(application.id).toUpperCase().replace(/[^A-Z0-9]+/g, '_')}_${name.toUpperCase()}`;
+/**
+ * `<password>` in a CarInfo test case -> the CARINFO_PASSWORD variable, and
+ * `<consumer no>` in a TNEB one -> TNEB_CONSUMER_NO.
+ */
+const envName = (text) => String(text).trim().toUpperCase().replace(/[^A-Z0-9]+/g, '_');
+const envNameFor = (name, application) => `${envName(application.id)}_${envName(name)}`;
+
+/** The JS expression for a step value: a string literal, or a fromEnv() read for a placeholder. */
+function valueExpression(value, application) {
+  const secret = String(value).match(SECRET_PLACEHOLDER);
+  return secret ? `fromEnv(${quote(envNameFor(secret[1], application))})` : null;
+}
 
 /** The env variables a canonical test case needs, in the order it needs them. */
 export function secretsRequiredBy(canonical, application) {
@@ -267,6 +287,7 @@ export function generateSpec(testCase, options = {}) {
   ].filter((line) => line !== null);
 
   const body = [];
+
   if (canonical.preconditions?.length) {
     body.push(...canonical.preconditions.map((precondition) => `${INDENT}// Precondition: ${precondition}`), '');
   }

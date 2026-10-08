@@ -10,7 +10,7 @@ application it is working on.
 | --- | --- | --- |
 | YouTube | `input/youtube-tests.xlsx`, `input/youtube-tests.docx` | `TC-YT-*` |
 | OrangeHRM | `input/orangehrm-tests.xlsx`, `input/orangehrm-tests.docx` | `TC-OHRM-*` |
-| SauceDemo | `input/sample-tests.xlsx` | `TC-SD-*` |
+| SauceDemo | `input/sample-tests.xlsx`, `input/sample-tests.docx` | `TC-SD-*` |
 | CarInfo | `input/carinfo-tests.docx`, `input/carinfo-tests.xlsx` | `TC-CI-*` |
 | TNEB | `input/tneb-tests.docx`, `input/tneb-tests.xlsx`, `input/EB-tests.docx` | `TC-TNEB-*`, `TC-EB-001` |
 
@@ -57,6 +57,8 @@ action** are exercised.
 ## SauceDemo, and what a third application taught the framework
 
 `input/sample-tests.xlsx` covers [saucedemo.com](https://www.saucedemo.com):
+(`input/sample-tests.docx` is the same test cases in Word, built from the
+spreadsheet by `node scripts/build-saucedemo-docx.js`)
 login, cart, sorting and checkout. Its manual test cases are written in a style
 the first two documents never used, and each difference became a rule:
 
@@ -87,8 +89,21 @@ catalog itself, so the reasons are recorded here:
 | "Enter username as X and password as Y" | Two actions in one step; the canonical model is one action per step | Two steps |
 | A real address and password in the document | Test documents get committed, mailed and pasted into chat. A secret in one is a secret published | Placeholders, and no sign-in at all |
 
-`scripts/build-carinfo-inputs.js` is the reworked document, and the reasoning is
-in its header comment.
+`scripts/build-carinfo-inputs.js` builds the documents, and the reasoning is
+in its header comment. The original wording is kept verbatim as TC-CI-001, and
+the automatable rewrite is TC-CI-005.
+
+Because TC-CI-001 still says "Select Google", the framework cannot automate it.
+Generating the CarInfo document **skips** TC-CI-001 with
+`TARGET_NOT_UNDERSTOOD`, deletes any older `generated/TC-CI-001.spec.js` (it
+would no longer match the manual test case), still generates TC-CI-002 to
+TC-CI-005, and exits with code 1 so the gap stays visible:
+
+```
+✗ TC-CI-001 skipped - TARGET_NOT_UNDERSTOOD: Could not resolve a locator for "Google".
+...
+✗ 1 test case(s) could not be automated and were skipped: TC-CI-001 (TARGET_NOT_UNDERSTOOD)
+```
 
 The catalog in `src/generator/applications/carinfo.js` also carries an honest
 warning: its selectors follow the site's visible structure but have **not** been
@@ -144,6 +159,11 @@ two documents sharing a test case id would overwrite each other's generated spec
 with no warning at all. As with CarInfo, the catalog's selectors have
 **not** yet been verified against the live portal.
 
+`input/EB-tests.docx` itself now ends with a check as well: step 7, "Verify
+that the invoice summary is visible", so TC-EB-001 can fail when no invoice
+comes back. It still opens the portal with `?locale=ta`, so on the live site it
+can still fail at step 3 for the locale reason described above.
+
 ## Reading the real page, when the catalog was a guess
 
 A catalog written without the live site in front of you is a guess: nothing
@@ -180,8 +200,11 @@ A manual test case that needs a login writes the value by name:
 ```
 
 `<name>` in a CarInfo test case becomes `CARINFO_<NAME>` - the variable is
-`<APPLICATION>_<NAME>`, both upper-cased - and the generated spec reads it when
-it runs:
+`<APPLICATION>_<NAME>`, both upper-cased, with spaces and punctuation turned
+into `_`, so `<consumer no>` in a TNEB test case is `TNEB_CONSUMER_NO`. The
+placeholder may be quoted or bare (`Enter <consumer no> in the Consumer No
+field`), and works in a `Verify ... contains <consumer no>` step too. The
+generated spec reads it when it runs:
 
 ```js
 await page.getByLabel(/username/i).fill(fromEnv('CARINFO_USERNAME'));

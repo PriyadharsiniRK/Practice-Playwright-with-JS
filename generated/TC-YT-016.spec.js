@@ -19,23 +19,32 @@ test('TC-YT-016 - Search using Enter', async ({ page }, testInfo) => {
     await testInfo.attach('Step 1', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 2: Enter "Playwright automation" in the search box', async () => {
-    await page.getByRole('combobox', { name: /search/i }).fill('Playwright automation');
+  await test.step('Step 2: Close the cookie consent dialog if it is displayed', async () => {
+    const closeButton = page.locator('ytd-consent-bump-v2-lightbox button, form[action*="consent.youtube.com"] button').filter({ hasText: /reject all|accept all|alle ablehnen|alle akzeptieren|tout refuser|tout accepter|rechazar todo|aceptar todo|rifiuta tutto|accetta tutto|alles afwijzen|alles accepteren|avvisa alla|godkänn alla|afvis alle|accepter alle|avvis alle|godta alle|hylkää kaikki|hyväksy kaikki|odrzuć wszystko|zaakceptuj wszystko|rejeitar tudo|aceitar tudo/i }).first();
+    if (await closeButton.waitFor({ timeout: 10_000 }).then(() => true, () => false)) {
+      await closeButton.click();
+      await closeButton.waitFor({ state: 'hidden' });
+    }
     await testInfo.attach('Step 2', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 3: Press Enter', async () => {
-    await page.keyboard.press('Enter');
+  await test.step('Step 3: Enter "Playwright automation" in the search box', async () => {
+    await page.getByRole('combobox', { name: /search/i }).fill('Playwright automation');
     await testInfo.attach('Step 3', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 4: Verify that the URL contains "/results"', async () => {
-    await expect(page).toHaveURL(/\/results/i);
+  await test.step('Step 4: Press Enter', async () => {
+    await page.keyboard.press('Enter');
     await testInfo.attach('Step 4', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 5: Verify that search results are displayed', async () => {
-    await expect(page.locator('ytd-search')).toBeVisible();
+  await test.step('Step 5: Verify that the URL contains "/results"', async () => {
+    await expect(page).toHaveURL(/\/results/i);
     await testInfo.attach('Step 5', { body: await page.screenshot(), contentType: 'image/png' });
+  });
+
+  await test.step('Step 6: Verify that search results are displayed', async () => {
+    await expect(page.locator('ytd-search')).toBeVisible();
+    await testInfo.attach('Step 6', { body: await page.screenshot(), contentType: 'image/png' });
   });
 });

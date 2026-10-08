@@ -20,8 +20,13 @@ const URL_PATTERN = /\bhttps?:\/\/[^\s"'<>]+/i;
 /**
  * Matches a quoted value, keeping the quote characters balanced so an
  * apostrophe inside a double-quoted value does not truncate it.
+ *
+ * A bare placeholder such as `<consumer no>` counts as a value too, brackets
+ * included: it names a value kept in .env (see the generator's fromEnv), and a
+ * tester writing `Enter <consumer no> in the Consumer No box` should not have to
+ * quote it as well.
  */
-const QUOTED_PATTERN = /"([^"]+)"|“([^”]+)”|'([^']+)'|‘([^’]+)’/;
+const QUOTED_PATTERN = /"([^"]+)"|“([^”]+)”|'([^']+)'|‘([^’]+)’|(<[A-Za-z][A-Za-z0-9_ -]*>)/;
 
 /** Returns the text inside the first balanced pair of quotes, if any. */
 const quotedValue = (text) => text.match(QUOTED_PATTERN)?.slice(1).find((group) => group != null);
@@ -35,6 +40,12 @@ const PRESS = /\bpress\b\s+(?:the\s+)?["']?(enter|return|escape|tab|arrow\w+|spa
 const ASSERT = /^(verify|check|assert|validate|ensure|confirm|the\s+\w+\s+should)\b/i;
 const BACK = /\b(navigate|go)\s+back\b|\bpress\s+back\b|\bbrowser\s+back\b/i;
 const FORWARD = /\b(navigate|go)\s+forward\b|\bpress\s+forward\b|\bbrowser\s+forward\b/i;
+/**
+ * "Close the cookie consent dialog if it is displayed" - an optional pop-up.
+ * Checked before CLICK: closing something that may not be there is not a click
+ * that must succeed.
+ */
+const DISMISS = /^(close|dismiss|accept|reject|decline)\b.*\b(dialog|pop-?up|banner|consent|cookies?|overlay)\b/i;
 /** "Clear the search box" - emptying a field is not the same as filling it. */
 const CLEAR = /^(clear|empty|erase)\b/i;
 /**
@@ -57,7 +68,7 @@ const ACTION_VERB =
  * search box` is one action, and the "and" inside the quotes must not split it.
  */
 export function actionClauses(text) {
-  const withoutValues = text.replace(/"[^"]*"|“[^”]*”|'[^']*'|‘[^’]*’/g, '""');
+  const withoutValues = text.replace(/"[^"]*"|“[^”]*”|'[^']*'|‘[^’]*’|<[A-Za-z][A-Za-z0-9_ -]*>/g, '""');
   return withoutValues
     .split(/\s*,\s*|\s+and\s+then\s+|\s+then\s+|\s+and\s+/i)
     .map((clause) => clause.trim())
@@ -235,6 +246,13 @@ export function createHeuristicProvider() {
 
       if (BACK.test(text)) {
         return { ...base, action: 'GO_BACK', target: null, value: null };
+      }
+
+      if (DISMISS.test(text)) {
+        const popup = text
+          .replace(/^(close|dismiss|accept|reject|decline)\s+/i, '')
+          .replace(/\s+(if|when)\b.*$/i, '');
+        return { ...base, action: 'DISMISS', target: target(popup), value: null };
       }
 
       if (CLEAR.test(text)) {

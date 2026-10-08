@@ -9,6 +9,20 @@
  * one and registering it in ./index.js.
  */
 
+/**
+ * The buttons that close YouTube's cookie consent, in English and the common
+ * EU languages YouTube may show it in. "Reject all" comes first in the dialog,
+ * so it is the one clicked when both are present.
+ */
+const CONSENT_BUTTON_TEXT = {
+  source:
+    'reject all|accept all|alle ablehnen|alle akzeptieren|tout refuser|tout accepter|' +
+    'rechazar todo|aceptar todo|rifiuta tutto|accetta tutto|alles afwijzen|alles accepteren|' +
+    'avvisa alla|godkänn alla|afvis alle|accepter alle|avvis alle|godta alle|' +
+    'hylkää kaikki|hyväksy kaikki|odrzuć wszystko|zaakceptuj wszystko|rejeitar tudo|aceitar tudo',
+  flags: 'i',
+};
+
 export const youtube = {
   id: 'youtube',
   name: 'YouTube',
@@ -17,6 +31,19 @@ export const youtube = {
   baseUrl: 'https://www.youtube.com',
 
   targets: [
+    {
+      // The dialog itself has no box of its own, so the target is the button
+      // that closes it - on the dialog over the page and on consent.youtube.com.
+      id: 'youtube.consentDialog',
+      description: 'cookie consent dialog',
+      match: [/\b(cookie|consent)\b/i],
+      spec: {
+        kind: 'css',
+        selector: 'ytd-consent-bump-v2-lightbox button, form[action*="consent.youtube.com"] button',
+        hasText: CONSENT_BUTTON_TEXT,
+        nth: 'first',
+      },
+    },
     {
       id: 'youtube.searchBox',
       description: 'YouTube search box',

@@ -6,10 +6,29 @@
 //   source    : input/tneb-tests.docx
 //   analyzer  : heuristic
 //   screenshots: one per step
+//   secrets   : TNEB_MOBILE_NO (from .env - never stored here)
 // Re-run `npm run generate` after editing the manual test case.
 // ---------------------------------------------------------------------------
 
 import { test, expect } from '@playwright/test';
+
+/**
+ * Reads a credential the manual test case referred to by name.
+ *
+ * The value is never written into this file: a generated spec is committed
+ * like any other source. It lives in .env, which is not. Missing means a
+ * loud failure rather than a blank field and a confusing assertion later.
+ */
+const fromEnv = (name) => {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(
+      `${name} is not set. Add it to .env (see .env.example) - the manual test ` +
+      `case refers to this value by name rather than stating it.`,
+    );
+  }
+  return value;
+};
 
 test('TC-TNEB-003 - Malformed details return no invoice', async ({ page }, testInfo) => {
   // Precondition: User has internet access.
@@ -29,8 +48,8 @@ test('TC-TNEB-003 - Malformed details return no invoice', async ({ page }, testI
     await testInfo.attach('Step 3', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 4: Enter "9000000000" in the Registered Mobile No box', async () => {
-    await page.getByRole('textbox', { name: /mobile\s*(no|number)/i }).fill('9000000000');
+  await test.step('Step 4: Enter "<mobile no>" in the Registered Mobile No box', async () => {
+    await page.getByRole('textbox', { name: /mobile\s*(no|number)/i }).fill(fromEnv('TNEB_MOBILE_NO'));
     await testInfo.attach('Step 4', { body: await page.screenshot(), contentType: 'image/png' });
   });
 

@@ -84,3 +84,28 @@ test('a toggle is asserted by the label it now shows', async () => {
   assert.equal(canonical.steps[0].value, 'Unmute');
   assert.equal(catalogId(canonical.steps[0]), 'youtube.muteButton');
 });
+
+test('"Close the cookie consent dialog if it is displayed" is an optional DISMISS step', async () => {
+  const canonical = await analyzeTestCase(
+    {
+      id: 'TC-YT-CONSENT',
+      title: 'Consent',
+      steps: [
+        { stepNumber: 1, text: 'Open https://www.youtube.com' },
+        { stepNumber: 2, text: 'Close the cookie consent dialog if it is displayed' },
+      ],
+    },
+    { provider: createProvider('heuristic') },
+  );
+  assert.equal(canonical.steps[1].action, 'DISMISS');
+  assert.equal(resolveTarget(canonical.steps[1].target, applicationById('youtube')).catalogId, 'youtube.consentDialog');
+
+  const { code } = generateSpec(canonical, { screenshots: false });
+  // Keyed on the close button: the <ytd-consent-bump-v2-lightbox> element has
+  // no box of its own, so Playwright never considers the dialog itself visible.
+  assert.match(code, /page\.locator\('ytd-consent-bump-v2-lightbox button, form\[action\*="consent\.youtube\.com"\] button'\)/);
+  assert.match(code, /\.filter\(\{ hasText: \/reject all\|accept all\|/);
+  // Optional: clicks only when the dialog appears, never fails when it does not.
+  assert.match(code, /if \(await closeButton\.waitFor\(\{ timeout: 10_000 \}\)\.then\(\(\) => true, \(\) => false\)\) \{/);
+  assert.match(code, /await closeButton\.click\(\);/);
+});

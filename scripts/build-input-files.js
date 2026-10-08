@@ -22,6 +22,7 @@ export const TEST_CASES = [
     preconditions: ['User has internet access.'],
     steps: [
       { text: 'Open https://www.youtube.com', expected: 'YouTube homepage is displayed' },
+      { text: 'Close the cookie consent dialog if it is displayed', expected: 'The page is not covered by the consent dialog' },
       { text: 'Enter "Playwright automation" in the search box', expected: 'Search text is entered' },
       { text: 'Click the Search button', expected: 'Search is submitted' },
       { text: 'Verify that search results are displayed', expected: 'A list of matching videos is shown' },
@@ -35,6 +36,7 @@ export const TEST_CASES = [
     preconditions: ['User has internet access.'],
     steps: [
       { text: 'Open https://www.youtube.com', expected: 'YouTube homepage is displayed' },
+      { text: 'Close the cookie consent dialog if it is displayed', expected: 'The page is not covered by the consent dialog' },
       { text: 'Verify that the YouTube logo is visible', expected: 'The logo is shown in the header' },
       { text: 'Verify that the search box is visible', expected: 'The search box is shown in the header' },
       { text: 'Verify that the page title contains "YouTube"', expected: 'Browser tab reads YouTube' },
@@ -46,6 +48,7 @@ export const TEST_CASES = [
     preconditions: ['User has internet access.'],
     steps: [
       { text: 'Open https://www.youtube.com', expected: 'YouTube homepage is displayed' },
+      { text: 'Close the cookie consent dialog if it is displayed', expected: 'The page is not covered by the consent dialog' },
       { text: 'Enter "Playwright testing tutorial" in the search box', expected: 'Search text is entered' },
       { text: 'Press Enter', expected: 'Search is submitted' },
       { text: 'Verify that search results are displayed', expected: 'A list of matching videos is shown' },
@@ -60,6 +63,7 @@ export const TEST_CASES = [
     preconditions: ['User has internet access.'],
     steps: [
       { text: 'Open https://www.youtube.com', expected: 'YouTube homepage is displayed' },
+      { text: 'Close the cookie consent dialog if it is displayed', expected: 'The page is not covered by the consent dialog' },
       { text: 'Enter "Playwright automation" in the search box', expected: 'Search text is entered' },
       { text: 'Click the Search button', expected: 'Search is submitted' },
       { text: 'Click the first search result', expected: 'The video opens' },
@@ -74,6 +78,7 @@ export const TEST_CASES = [
     preconditions: ['User has internet access.'],
     steps: [
       { text: 'Open https://www.youtube.com', expected: 'YouTube homepage is displayed' },
+      { text: 'Close the cookie consent dialog if it is displayed', expected: 'The page is not covered by the consent dialog' },
       { text: 'Enter "Playwright automation" in the search box', expected: 'Search text is entered' },
       { text: 'Click the Search button', expected: 'Search is submitted' },
       { text: 'Verify that search results are displayed', expected: 'A list of matching videos is shown' },
@@ -87,6 +92,7 @@ export const TEST_CASES = [
     preconditions: ['User has internet access.'],
     steps: [
       { text: 'Open https://www.youtube.com', expected: 'YouTube homepage is displayed' },
+      { text: 'Close the cookie consent dialog if it is displayed', expected: 'The page is not covered by the consent dialog' },
       { text: 'Enter "Playwright automation" in the search box', expected: 'Search text is entered' },
       { text: 'Press Enter', expected: 'Search is submitted' },
       { text: 'Click the first search result', expected: 'The video opens' },
@@ -101,6 +107,7 @@ export const TEST_CASES = [
     preconditions: ['User has internet access.'],
     steps: [
       { text: 'Open https://www.youtube.com', expected: 'YouTube homepage is displayed' },
+      { text: 'Close the cookie consent dialog if it is displayed', expected: 'The page is not covered by the consent dialog' },
       { text: 'Enter "Playwright automation" in the search box', expected: 'Search text is entered' },
       { text: 'Click the Search button', expected: 'Search results are displayed' },
       { text: 'Verify that search results are displayed', expected: 'A list of matching videos is shown' },
@@ -115,6 +122,7 @@ export const TEST_CASES = [
     preconditions: ['User has internet access.'],
     steps: [
       { text: 'Open https://www.youtube.com', expected: 'YouTube homepage is displayed' },
+      { text: 'Close the cookie consent dialog if it is displayed', expected: 'The page is not covered by the consent dialog' },
       { text: 'Enter "Playwright vs Selenium" in the search box', expected: 'Search text is entered' },
       { text: 'Click the Search button', expected: 'Search is submitted' },
       { text: 'Verify that search results are displayed', expected: 'A list of matching videos is shown' },
@@ -127,6 +135,7 @@ export const TEST_CASES = [
     preconditions: ['User has internet access.'],
     steps: [
       { text: 'Open https://www.youtube.com', expected: 'YouTube homepage is displayed' },
+      { text: 'Close the cookie consent dialog if it is displayed', expected: 'The page is not covered by the consent dialog' },
       { text: 'Enter "Playwright automation" in the search box', expected: 'Search text is entered' },
       { text: 'Press Enter', expected: 'Search is submitted' },
       { text: 'Click the first search result', expected: 'The video opens' },
@@ -141,6 +150,7 @@ export const TEST_CASES = [
     preconditions: ['User has internet access.'],
     steps: [
       { text: 'Open https://www.youtube.com', expected: 'YouTube homepage is displayed' },
+      { text: 'Close the cookie consent dialog if it is displayed', expected: 'The page is not covered by the consent dialog' },
       { text: 'Verify that the YouTube logo is visible', expected: 'The logo is shown in the header' },
       { text: 'Verify that the video player is not visible', expected: 'No player is rendered on the homepage' },
     ],
@@ -151,6 +161,7 @@ export const TEST_CASES = [
     preconditions: ['User has internet access.'],
     steps: [
       { text: 'Open https://www.youtube.com', expected: 'YouTube homepage is displayed' },
+      { text: 'Close the cookie consent dialog if it is displayed', expected: 'The page is not covered by the consent dialog' },
       { text: 'Enter "Playwright automation" in the search box', expected: 'Search text is entered' },
       { text: 'Click the Search button', expected: 'Search is submitted' },
       { text: 'Verify that search results are displayed', expected: 'A list of matching videos is shown' },
@@ -165,6 +176,7 @@ export const TEST_CASES = [
     preconditions: ['User has internet access.'],
     steps: [
       { text: 'Open https://www.youtube.com', expected: 'YouTube homepage is displayed' },
+      { text: 'Close the cookie consent dialog if it is displayed', expected: 'The page is not covered by the consent dialog' },
       { text: 'Enter "Playwright testing tutorial" in the search box', expected: 'Search text is entered' },
       { text: 'Press Enter', expected: 'Search is submitted' },
       { text: 'Click the first search result', expected: 'The video opens' },
@@ -231,6 +243,7 @@ export const TEST_CASES = [
     preconditions: ['User has internet access.'],
     steps: [
       { text: 'Open https://www.youtube.com', expected: 'YouTube homepage is displayed' },
+      { text: 'Close the cookie consent dialog if it is displayed', expected: 'The page is not covered by the consent dialog' },
       { text: 'Enter "Playwright automation" in the search box', expected: 'Search text is entered' },
       { text: 'Click the Search button', expected: 'Search is submitted' },
       { text: 'Verify that search results are displayed', expected: 'A list of matching videos is shown' },
@@ -242,6 +255,7 @@ export const TEST_CASES = [
     preconditions: ['User has internet access.'],
     steps: [
       { text: 'Open https://www.youtube.com', expected: 'YouTube homepage is displayed' },
+      { text: 'Close the cookie consent dialog if it is displayed', expected: 'The page is not covered by the consent dialog' },
       { text: 'Enter "zzqqxx no such video" in the search box', expected: 'The unlikely phrase is entered' },
       { text: 'Press Enter', expected: 'Search is submitted' },
       { text: 'Verify that the no results message is visible', expected: 'The empty state is shown' },
@@ -254,6 +268,7 @@ export const TEST_CASES = [
     preconditions: ['User has internet access.'],
     steps: [
       { text: 'Open https://www.youtube.com', expected: 'YouTube homepage is displayed' },
+      { text: 'Close the cookie consent dialog if it is displayed', expected: 'The page is not covered by the consent dialog' },
       { text: 'Enter "Playwright automation" in the search box', expected: 'Search text is entered' },
       { text: 'Clear the search box', expected: 'The field is emptied' },
       { text: 'Verify that the search box is visible', expected: 'The field is still there, now empty' },
@@ -265,6 +280,7 @@ export const TEST_CASES = [
     preconditions: ['User has internet access.'],
     steps: [
       { text: 'Open https://www.youtube.com', expected: 'YouTube homepage is displayed' },
+      { text: 'Close the cookie consent dialog if it is displayed', expected: 'The page is not covered by the consent dialog' },
       { text: 'Enter "Playwright automation" in the search box', expected: 'Search text is entered' },
       { text: 'Press Enter', expected: 'Search is submitted' },
       { text: 'Verify that the URL contains "/results"', expected: 'The results page is shown' },
@@ -277,6 +293,7 @@ export const TEST_CASES = [
     preconditions: ['User has internet access.'],
     steps: [
       { text: 'Open https://www.youtube.com', expected: 'YouTube homepage is displayed' },
+      { text: 'Close the cookie consent dialog if it is displayed', expected: 'The page is not covered by the consent dialog' },
       { text: 'Enter "Playwright automation" in the search box', expected: 'Search text is entered' },
       { text: 'Click the Search button', expected: 'Search is submitted' },
       { text: 'Verify that the URL contains "/results"', expected: 'The results page is shown' },
@@ -288,6 +305,7 @@ export const TEST_CASES = [
     preconditions: ['User has internet access.'],
     steps: [
       { text: 'Open https://www.youtube.com', expected: 'YouTube homepage is displayed' },
+      { text: 'Close the cookie consent dialog if it is displayed', expected: 'The page is not covered by the consent dialog' },
       { text: 'Enter "Playwright automation" in the search box', expected: 'Search text is entered' },
       { text: 'Press Enter', expected: 'Search is submitted' },
       { text: 'Click the first search result', expected: 'The video opens' },
@@ -301,6 +319,7 @@ export const TEST_CASES = [
     preconditions: ['User has internet access.'],
     steps: [
       { text: 'Open https://www.youtube.com', expected: 'YouTube homepage is displayed' },
+      { text: 'Close the cookie consent dialog if it is displayed', expected: 'The page is not covered by the consent dialog' },
       { text: 'Enter "Playwright automation" in the search box', expected: 'Search text is entered' },
       { text: 'Press Enter', expected: 'Search is submitted' },
       { text: 'Click the first search result', expected: 'The video opens' },
@@ -313,6 +332,7 @@ export const TEST_CASES = [
     preconditions: ['User has internet access.'],
     steps: [
       { text: 'Open https://www.youtube.com', expected: 'YouTube homepage is displayed' },
+      { text: 'Close the cookie consent dialog if it is displayed', expected: 'The page is not covered by the consent dialog' },
       { text: 'Enter "Playwright automation" in the search box', expected: 'Search text is entered' },
       { text: 'Press Enter', expected: 'Search is submitted' },
       { text: 'Click the first search result', expected: 'The video opens' },
@@ -328,6 +348,7 @@ export const TEST_CASES = [
     preconditions: ['User has internet access.'],
     steps: [
       { text: 'Open https://www.youtube.com', expected: 'YouTube homepage is displayed' },
+      { text: 'Close the cookie consent dialog if it is displayed', expected: 'The page is not covered by the consent dialog' },
       { text: 'Enter "Playwright automation" in the search box', expected: 'Search text is entered' },
       { text: 'Press Enter', expected: 'Search is submitted' },
       { text: 'Click the first search result', expected: 'The video opens' },
@@ -341,6 +362,7 @@ export const TEST_CASES = [
     preconditions: ['User has internet access.'],
     steps: [
       { text: 'Open https://www.youtube.com', expected: 'YouTube homepage is displayed' },
+      { text: 'Close the cookie consent dialog if it is displayed', expected: 'The page is not covered by the consent dialog' },
       { text: 'Enter "Playwright automation" in the search box', expected: 'Search text is entered' },
       { text: 'Press Enter', expected: 'Search is submitted' },
       { text: 'Click the first search result', expected: 'The video opens' },
@@ -356,6 +378,7 @@ export const TEST_CASES = [
     preconditions: ['User has internet access.'],
     steps: [
       { text: 'Open https://www.youtube.com', expected: 'YouTube homepage is displayed' },
+      { text: 'Close the cookie consent dialog if it is displayed', expected: 'The page is not covered by the consent dialog' },
       { text: 'Enter "Playwright automation" in the search box', expected: 'Search text is entered' },
       { text: 'Press Enter', expected: 'Search is submitted' },
       { text: 'Click the first search result', expected: 'The video opens' },
@@ -369,6 +392,7 @@ export const TEST_CASES = [
     preconditions: ['User has internet access.'],
     steps: [
       { text: 'Open https://www.youtube.com', expected: 'YouTube homepage is displayed' },
+      { text: 'Close the cookie consent dialog if it is displayed', expected: 'The page is not covered by the consent dialog' },
       { text: 'Enter "Playwright automation" in the search box', expected: 'Search text is entered' },
       { text: 'Press Enter', expected: 'Search is submitted' },
       { text: 'Click the first search result', expected: 'The video opens' },
@@ -383,6 +407,7 @@ export const TEST_CASES = [
     preconditions: ['User has internet access.'],
     steps: [
       { text: 'Open https://www.youtube.com', expected: 'YouTube homepage is displayed' },
+      { text: 'Close the cookie consent dialog if it is displayed', expected: 'The page is not covered by the consent dialog' },
       { text: 'Enter "Playwright automation" in the search box', expected: 'Search text is entered' },
       { text: 'Press Enter', expected: 'Search is submitted' },
       { text: 'Click the first search result', expected: 'The video opens' },
@@ -397,6 +422,7 @@ export const TEST_CASES = [
     preconditions: ['User has internet access.'],
     steps: [
       { text: 'Open https://www.youtube.com', expected: 'YouTube homepage is displayed' },
+      { text: 'Close the cookie consent dialog if it is displayed', expected: 'The page is not covered by the consent dialog' },
       { text: 'Enter "Playwright automation" in the search box', expected: 'Search text is entered' },
       { text: 'Press Enter', expected: 'Search is submitted' },
       { text: 'Click the first search result', expected: 'The video opens' },
@@ -409,6 +435,7 @@ export const TEST_CASES = [
     preconditions: ['User has internet access.', 'User is not signed in.'],
     steps: [
       { text: 'Open https://www.youtube.com', expected: 'YouTube homepage is displayed' },
+      { text: 'Close the cookie consent dialog if it is displayed', expected: 'The page is not covered by the consent dialog' },
       { text: 'Enter "Playwright automation" in the search box', expected: 'Search text is entered' },
       { text: 'Press Enter', expected: 'Search is submitted' },
       { text: 'Click the first search result', expected: 'The video opens' },
@@ -423,6 +450,7 @@ export const TEST_CASES = [
     preconditions: ['User has internet access.', 'User is not signed in.'],
     steps: [
       { text: 'Open https://www.youtube.com', expected: 'YouTube homepage is displayed' },
+      { text: 'Close the cookie consent dialog if it is displayed', expected: 'The page is not covered by the consent dialog' },
       { text: 'Enter "Playwright automation" in the search box', expected: 'Search text is entered' },
       { text: 'Press Enter', expected: 'Search is submitted' },
       { text: 'Click the first search result', expected: 'The video opens' },
@@ -437,6 +465,7 @@ export const TEST_CASES = [
     preconditions: ['User has internet access.'],
     steps: [
       { text: 'Open https://www.youtube.com', expected: 'YouTube homepage is displayed' },
+      { text: 'Close the cookie consent dialog if it is displayed', expected: 'The page is not covered by the consent dialog' },
       { text: 'Verify that the page title contains "YouTube"', expected: 'Browser tab reads YouTube' },
       { text: 'Verify that the YouTube logo is visible', expected: 'The logo is shown in the header' },
       { text: 'Verify that the search box is visible', expected: 'The search box is shown in the header' },
@@ -448,6 +477,7 @@ export const TEST_CASES = [
     preconditions: ['User has internet access.'],
     steps: [
       { text: 'Open https://www.youtube.com', expected: 'YouTube homepage is displayed' },
+      { text: 'Close the cookie consent dialog if it is displayed', expected: 'The page is not covered by the consent dialog' },
       { text: 'Enter "Playwright automation" in the search box', expected: 'Search text is entered' },
       { text: 'Press Enter', expected: 'Search is submitted' },
       { text: 'Click the first search result', expected: 'The video opens' },
@@ -462,6 +492,7 @@ export const TEST_CASES = [
     preconditions: ['User has internet access.'],
     steps: [
       { text: 'Open https://www.youtube.com', expected: 'YouTube homepage is displayed' },
+      { text: 'Close the cookie consent dialog if it is displayed', expected: 'The page is not covered by the consent dialog' },
       { text: 'Enter "Playwright automation" in the search box', expected: 'Search text is entered' },
       { text: 'Press Enter', expected: 'Search is submitted' },
       { text: 'Click the first search result', expected: 'The video opens' },

@@ -223,6 +223,7 @@ Both sample documents are committed under `input/` and can be regenerated with
 ```js
 Action =
   | 'NAVIGATE' | 'GO_BACK' | 'GO_FORWARD' | 'CLICK' | 'FILL' | 'CLEAR' | 'PRESS' | 'SELECT'
+  | 'DISMISS'                 // close a pop-up if it appears (cookie consent)
   | 'ASSERT_VISIBLE' | 'ASSERT_HIDDEN' | 'ASSERT_TEXT' | 'ASSERT_URL' | 'ASSERT_TITLE'
 
 TestStep {
@@ -348,22 +349,29 @@ Title:        Search for a video on YouTube
 Precondition: User has internet access.
 
 1. Open https://www.youtube.com
-2. Enter "Playwright automation" in the search box
-3. Click the Search button
-4. Verify that search results are displayed
-5. Click the first search result
-6. Verify that the video page is displayed
+2. Close the cookie consent dialog if it is displayed
+3. Enter "Playwright automation" in the search box
+4. Click the Search button
+5. Verify that search results are displayed
+6. Click the first search result
+7. Verify that the video page is displayed
 ```
+
+Step 2 is in every YouTube test case. In the EU/EEA, the UK and some other
+regions YouTube covers the page with a cookie-consent dialog that blocks every
+click. The step closes it with "Reject all" when it appears and does nothing
+when it does not, so the same test case runs everywhere.
 
 **Normalised steps** (`npm run analyze -- TC-YT-001`)
 
 ```
 1. NAVIGATE        url = https://www.youtube.com
-2. FILL            target = search input, value = Playwright automation
-3. CLICK           target = Search button
-4. ASSERT_VISIBLE  target = search results
-5. CLICK           target = first search result
-6. ASSERT_URL      expected = /watch
+2. DISMISS         target = cookie consent dialog
+3. FILL            target = search input, value = Playwright automation
+4. CLICK           target = Search button
+5. ASSERT_VISIBLE  target = search results
+6. CLICK           target = first search result
+7. ASSERT_URL      expected = /watch
 ```
 
 ---
@@ -394,29 +402,38 @@ test('TC-YT-001 - Search for a video on YouTube', async ({ page }, testInfo) => 
     await testInfo.attach('Step 1', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 2: Enter "Playwright automation" in the search box', async () => {
-    await page.getByRole('combobox', { name: /search/i }).fill('Playwright automation');
+  await test.step('Step 2: Close the cookie consent dialog if it is displayed', async () => {
+    const closeButton = page.locator('ytd-consent-bump-v2-lightbox button, form[action*="consent.youtube.com"] button').filter({ hasText: /reject all|accept all|alle ablehnen|alle akzeptieren|tout refuser|tout accepter|rechazar todo|aceptar todo|rifiuta tutto|accetta tutto|alles afwijzen|alles accepteren|avvisa alla|godkänn alla|afvis alle|accepter alle|avvis alle|godta alle|hylkää kaikki|hyväksy kaikki|odrzuć wszystko|zaakceptuj wszystko|rejeitar tudo|aceitar tudo/i }).first();
+    if (await closeButton.waitFor({ timeout: 10_000 }).then(() => true, () => false)) {
+      await closeButton.click();
+      await closeButton.waitFor({ state: 'hidden' });
+    }
     await testInfo.attach('Step 2', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 3: Click the Search button', async () => {
-    await page.getByRole('button', { name: /^search$/i }).click();
+  await test.step('Step 3: Enter "Playwright automation" in the search box', async () => {
+    await page.getByRole('combobox', { name: /search/i }).fill('Playwright automation');
     await testInfo.attach('Step 3', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 4: Verify that search results are displayed', async () => {
-    await expect(page.locator('ytd-search')).toBeVisible();
+  await test.step('Step 4: Click the Search button', async () => {
+    await page.getByRole('button', { name: /^search$/i }).click();
     await testInfo.attach('Step 4', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 5: Click the first search result', async () => {
-    await page.locator('ytd-video-renderer').first().click();
+  await test.step('Step 5: Verify that search results are displayed', async () => {
+    await expect(page.locator('ytd-search')).toBeVisible();
     await testInfo.attach('Step 5', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 6: Verify that the video page is displayed', async () => {
-    await expect(page).toHaveURL(/\/watch/i);
+  await test.step('Step 6: Click the first search result', async () => {
+    await page.locator('ytd-video-renderer').first().click();
     await testInfo.attach('Step 6', { body: await page.screenshot(), contentType: 'image/png' });
+  });
+
+  await test.step('Step 7: Verify that the video page is displayed', async () => {
+    await expect(page).toHaveURL(/\/watch/i);
+    await testInfo.attach('Step 7', { body: await page.screenshot(), contentType: 'image/png' });
   });
 });
 ```
@@ -441,15 +458,16 @@ $ npm run generate-and-test -- TC-YT-001
 Reading test case TC-YT-001...
 ✓ Excel parsed (input/youtube-tests.xlsx)
 ✓ Test case identified: TC-YT-001
-✓ 6 manual steps detected
+✓ 7 manual steps detected
 
 Analyzing steps... (analyzer: heuristic)
 ✓ Step 1 → NAVIGATE  url = https://www.youtube.com
-✓ Step 2 → FILL  target = youtube.searchBox [role], value = Playwright automation
-✓ Step 3 → CLICK  target = youtube.searchButton [role]
-✓ Step 4 → ASSERT_VISIBLE  target = youtube.searchResults [css]
-✓ Step 5 → CLICK  target = youtube.firstSearchResult [css]
-✓ Step 6 → ASSERT_URL  value = /watch
+✓ Step 2 → DISMISS  target = youtube.consentDialog [css]
+✓ Step 3 → FILL  target = youtube.searchBox [role], value = Playwright automation
+✓ Step 4 → CLICK  target = youtube.searchButton [role]
+✓ Step 5 → ASSERT_VISIBLE  target = youtube.searchResults [css]
+✓ Step 6 → CLICK  target = youtube.firstSearchResult [css]
+✓ Step 7 → ASSERT_URL  value = /watch
 ✓ TC-YT-001 → application: YouTube
 
 Generating Playwright test...
@@ -478,7 +496,7 @@ npm run demo                               # full pipeline against youtube.com
 npm run demo:youtube                       # the same, named for symmetry
 npm run demo:orangehrm                     # full pipeline against the OrangeHRM demo site
 npm run demo:saucedemo                     # full pipeline against saucedemo.com
-npm run demo:carinfo                       # full pipeline against car.info
+npm run demo:carinfo                       # full pipeline against car.info (set RUN_CARINFO=1; skipped by default)
 npm run demo:tneb                          # full pipeline against tnebnet.org
 npm run test:unit                          # unit tests for the framework
 npm run build:inputs                       # regenerate the sample documents
@@ -510,6 +528,7 @@ This is the main demonstration. TC-YT-002 is written only in the spreadsheet
 | TestCaseID | Title | Preconditions | Step | ExpectedResult |
 | --- | --- | --- | --- | --- |
 | TC-YT-002 | Verify YouTube homepage | User has internet access. | Open https://www.youtube.com | YouTube homepage is displayed |
+| TC-YT-002 | Verify YouTube homepage | User has internet access. | Close the cookie consent dialog if it is displayed | The page is not covered by the consent dialog |
 | TC-YT-002 | Verify YouTube homepage | User has internet access. | Verify that the YouTube logo is visible | Logo is shown |
 | TC-YT-002 | Verify YouTube homepage | User has internet access. | Verify that the search box is visible | Search box is shown |
 | TC-YT-002 | Verify YouTube homepage | User has internet access. | Verify that the page title contains "YouTube" | Title contains YouTube |
@@ -519,11 +538,12 @@ $ npm run generate-and-test -- TC-YT-002
 
 ✓ Excel parsed (input/youtube-tests.xlsx)
 ✓ Test case identified: TC-YT-002
-✓ 4 manual steps detected
+✓ 5 manual steps detected
 ✓ Step 1 → NAVIGATE  url = https://www.youtube.com
-✓ Step 2 → ASSERT_VISIBLE  target = youtube.logo [role]
-✓ Step 3 → ASSERT_VISIBLE  target = youtube.searchBox [role]
-✓ Step 4 → ASSERT_TITLE  value = YouTube
+✓ Step 2 → DISMISS  target = youtube.consentDialog [css]
+✓ Step 3 → ASSERT_VISIBLE  target = youtube.logo [role]
+✓ Step 4 → ASSERT_VISIBLE  target = youtube.searchBox [role]
+✓ Step 5 → ASSERT_TITLE  value = YouTube
 ✓ generated/TC-YT-002.spec.js
 ✓ TC-YT-002 passed
 ```
@@ -536,6 +556,11 @@ already knows needs nothing else. A new UI element needs one data entry in
 
 The pipeline refuses to produce automation it cannot stand behind. Every
 failure carries a stable code and a non-zero exit status.
+
+When a document holds several test cases, one that cannot be automated is
+reported and skipped, and the rest are still generated. Any older spec for the
+skipped test case is deleted so it cannot keep running under that id, and the
+command still exits with code 1.
 
 | Code | Raised when |
 | --- | --- |
@@ -630,6 +655,12 @@ failed generated test can be debugged like a hand-written one.
 * **Real sites, not mocks.** Generated tests run against the live
   application, so a green report means the real page behaved as the manual
   test case says.
+* **Optional pop-ups are an explicit, optional step.** A cookie-consent dialog
+  appears in some regions and not in others. The test case says so in plain
+  words ("Close the cookie consent dialog if it is displayed"), which becomes a
+  `DISMISS` step: it clicks the close button when the dialog appears within
+  10 seconds and does nothing otherwise. The step is visible in the document
+  and in the report, rather than hidden in the framework.
 
 ---
 
@@ -638,7 +669,7 @@ failed generated test can be debugged like a hand-written one.
 * Scope is a deliberately small slice of each application: search and playback
   on YouTube; login, the dashboard and the PIM menu on OrangeHRM.
 * A fixed set of canonical actions (navigate, back/forward, click, fill, clear,
-  press, select) and assertions (visible, hidden, text, URL, title). Anything
+  press, select, dismiss) and assertions (visible, hidden, text, URL, title). Anything
   else is refused rather than approximated.
 * One header-row Excel layout and one Word layout. No merged cells, no
   multi-sheet workbooks, no tables inside Word.
@@ -646,9 +677,10 @@ failed generated test can be debugged like a hand-written one.
   role and accessible name.
 * Steps are interpreted independently; there is no cross-step state beyond the
   test case title supplied as context.
-* Tests need an internet connection. Live sites change: YouTube's consent page
-  (shown in some regions), A/B-tested markup and locale differences can break a
-  curated selector. Run with `--headed` to see what happened, and use
+* Tests need an internet connection. Live sites change: A/B-tested markup,
+  locale differences, or a new kind of pop-up can break a curated selector.
+  The consent step recognises "Reject all" / "Accept all" in English and the
+  common EU languages. Run with `--headed` to see what happened, and use
   `npm run names -- "<url>"` to read the live accessible names when a selector
   needs updating.
 * The CarInfo and TNEB selectors have not yet been verified against the live

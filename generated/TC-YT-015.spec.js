@@ -19,18 +19,27 @@ test('TC-YT-015 - Clear search text', async ({ page }, testInfo) => {
     await testInfo.attach('Step 1', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 2: Enter "Playwright automation" in the search box', async () => {
-    await page.getByRole('combobox', { name: /search/i }).fill('Playwright automation');
+  await test.step('Step 2: Close the cookie consent dialog if it is displayed', async () => {
+    const closeButton = page.locator('ytd-consent-bump-v2-lightbox button, form[action*="consent.youtube.com"] button').filter({ hasText: /reject all|accept all|alle ablehnen|alle akzeptieren|tout refuser|tout accepter|rechazar todo|aceptar todo|rifiuta tutto|accetta tutto|alles afwijzen|alles accepteren|avvisa alla|godkänn alla|afvis alle|accepter alle|avvis alle|godta alle|hylkää kaikki|hyväksy kaikki|odrzuć wszystko|zaakceptuj wszystko|rejeitar tudo|aceitar tudo/i }).first();
+    if (await closeButton.waitFor({ timeout: 10_000 }).then(() => true, () => false)) {
+      await closeButton.click();
+      await closeButton.waitFor({ state: 'hidden' });
+    }
     await testInfo.attach('Step 2', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 3: Clear the search box', async () => {
-    await page.getByRole('combobox', { name: /search/i }).clear();
+  await test.step('Step 3: Enter "Playwright automation" in the search box', async () => {
+    await page.getByRole('combobox', { name: /search/i }).fill('Playwright automation');
     await testInfo.attach('Step 3', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 4: Verify that the search box is visible', async () => {
-    await expect(page.getByRole('combobox', { name: /search/i })).toBeVisible();
+  await test.step('Step 4: Clear the search box', async () => {
+    await page.getByRole('combobox', { name: /search/i }).clear();
     await testInfo.attach('Step 4', { body: await page.screenshot(), contentType: 'image/png' });
+  });
+
+  await test.step('Step 5: Verify that the search box is visible', async () => {
+    await expect(page.getByRole('combobox', { name: /search/i })).toBeVisible();
+    await testInfo.attach('Step 5', { body: await page.screenshot(), contentType: 'image/png' });
   });
 });
