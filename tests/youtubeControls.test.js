@@ -109,3 +109,40 @@ test('"Close the cookie consent dialog if it is displayed" is an optional DISMIS
   assert.match(code, /if \(await closeButton\.waitFor\(\{ timeout: 10_000 \}\)\.then\(\(\) => true, \(\) => false\)\) \{/);
   assert.match(code, /await closeButton\.click\(\);/);
 });
+
+test('"Skip the ad if it is displayed" is an optional DISMISS step with a longer wait', async () => {
+  const canonical = await analyzeTestCase(
+    {
+      id: 'TC-YT-AD',
+      title: 'Ad',
+      steps: [
+        { stepNumber: 1, text: 'Open https://www.youtube.com' },
+        { stepNumber: 2, text: 'Skip the ad if it is displayed' },
+      ],
+    },
+    { provider: createProvider('heuristic') },
+  );
+  assert.equal(canonical.steps[1].action, 'DISMISS');
+  assert.equal(resolveTarget(canonical.steps[1].target, applicationById('youtube')).catalogId, 'youtube.skipAdButton');
+  const { code } = generateSpec(canonical, { screenshots: false });
+  // The skip button only appears a few seconds into the ad.
+  assert.match(code, /closeButton\.waitFor\(\{ timeout: 15_000 \}\)/);
+});
+
+test('text checks on YouTube icon buttons read the accessible name, whole words only', async () => {
+  const canonical = await analyzeTestCase(
+    {
+      id: 'TC-YT-MUTE',
+      title: 'Mute',
+      steps: [
+        { stepNumber: 1, text: 'Open https://www.youtube.com' },
+        { stepNumber: 2, text: 'Verify that the Mute button contains "Mute"' },
+      ],
+    },
+    { provider: createProvider('heuristic') },
+  );
+  const { code } = generateSpec(canonical, { screenshots: false });
+  // "Mute" must not also match "Unmute".
+  assert.match(code, /expect\(page\.locator\('#movie_player \.ytp-mute-button'\)\)\.toHaveAccessibleName\(\/\\bMute\\b\/i\)/);
+  assert.doesNotMatch(code, /toContainText/);
+});

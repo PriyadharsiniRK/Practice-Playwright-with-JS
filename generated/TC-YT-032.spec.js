@@ -43,23 +43,32 @@ test('TC-YT-032 - Browser Forward navigation', async ({ page }, testInfo) => {
     await testInfo.attach('Step 5', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 6: Navigate back', async () => {
-    await page.goBack();
+  await test.step('Step 6: Skip the ad if it is displayed', async () => {
+    const closeButton = page.locator('#movie_player .ytp-skip-ad-button, #movie_player .ytp-ad-skip-button, #movie_player .ytp-ad-skip-button-modern').first();
+    if (await closeButton.waitFor({ timeout: 15_000 }).then(() => true, () => false)) {
+      await closeButton.click();
+      await closeButton.waitFor({ state: 'hidden' });
+    }
     await testInfo.attach('Step 6', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 7: Verify that the URL contains "/results"', async () => {
-    await expect(page).toHaveURL(/\/results/i);
+  await test.step('Step 7: Navigate back', async () => {
+    await page.goBack();
     await testInfo.attach('Step 7', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 8: Navigate forward', async () => {
-    await page.goForward();
+  await test.step('Step 8: Verify that the URL contains "/results"', async () => {
+    await expect(page).toHaveURL(/\/results/i);
     await testInfo.attach('Step 8', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 9: Verify that the video page is displayed', async () => {
-    await expect(page).toHaveURL(/\/watch/i);
+  await test.step('Step 9: Navigate forward', async () => {
+    await page.goForward();
     await testInfo.attach('Step 9', { body: await page.screenshot(), contentType: 'image/png' });
+  });
+
+  await test.step('Step 10: Verify that the video page is displayed', async () => {
+    await expect(page).toHaveURL(/\/watch/i);
+    await testInfo.attach('Step 10', { body: await page.screenshot(), contentType: 'image/png' });
   });
 });

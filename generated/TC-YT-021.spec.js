@@ -43,13 +43,27 @@ test('TC-YT-021 - Adjust volume', async ({ page }, testInfo) => {
     await testInfo.attach('Step 5', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 6: Verify that the volume slider is visible', async () => {
-    await expect(page.locator('#volume')).toBeVisible();
+  await test.step('Step 6: Skip the ad if it is displayed', async () => {
+    const closeButton = page.locator('#movie_player .ytp-skip-ad-button, #movie_player .ytp-ad-skip-button, #movie_player .ytp-ad-skip-button-modern').first();
+    if (await closeButton.waitFor({ timeout: 15_000 }).then(() => true, () => false)) {
+      await closeButton.click();
+      await closeButton.waitFor({ state: 'hidden' });
+    }
     await testInfo.attach('Step 6', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 7: Enter "40" in the volume slider', async () => {
-    await page.locator('#volume').fill('40');
+  await test.step('Step 7: Click the Mute button', async () => {
+    await page.locator('#movie_player .ytp-mute-button').click();
     await testInfo.attach('Step 7', { body: await page.screenshot(), contentType: 'image/png' });
+  });
+
+  await test.step('Step 8: Verify that the volume slider is visible', async () => {
+    await expect(page.locator('#movie_player .ytp-volume-panel')).toBeVisible();
+    await testInfo.attach('Step 8', { body: await page.screenshot(), contentType: 'image/png' });
+  });
+
+  await test.step('Step 9: Verify that the Mute button contains "Unmute"', async () => {
+    await expect(page.locator('#movie_player .ytp-mute-button')).toHaveAccessibleName(/\bUnmute\b/i);
+    await testInfo.attach('Step 9', { body: await page.screenshot(), contentType: 'image/png' });
   });
 });

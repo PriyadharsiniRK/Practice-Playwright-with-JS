@@ -26,7 +26,7 @@ const buildSystemPrompt = (application) => [
   '- GO_BACK        : return to the previous page (browser back). No target, no value.',
   '- FILL           : type text into a field. "value" is the text, "target" is the field.',
   '- CLICK          : click/tap/select an element. "target" is required.',
-  '- DISMISS        : close a pop-up that may or may not appear (cookie consent, banner). "target" is the pop-up.',
+  '- DISMISS        : close a pop-up that may or may not appear (cookie consent, a skippable ad). "target" is the pop-up.',
   '- PRESS          : press a keyboard key. "value" is the key name, e.g. "Enter".',
   '- ASSERT_VISIBLE : check that an element is displayed. "target" is required.',
   '- ASSERT_TEXT    : check that an element contains text. "value" is the expected text.',

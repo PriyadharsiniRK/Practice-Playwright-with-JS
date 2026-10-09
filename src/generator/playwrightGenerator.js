@@ -91,17 +91,19 @@ function emitStep(step, options) {
     case 'CLICK':
       lines.push(`await ${locatorFor()}.click();`);
       break;
-    case 'DISMISS':
-      // An optional pop-up (cookie consent and the like): shown in some regions
-      // or on some visits only. Close it when it appears; carry on when not.
+    case 'DISMISS': {
+      // An optional pop-up (cookie consent, a skippable ad): shown in some
+      // regions or on some visits only. Close it when it appears; carry on when not.
+      const wait = resolveTarget(step.target, options.application).spec.waitTimeout ?? 10_000;
       lines.push(
         `const closeButton = ${locatorFor()};`,
-        `if (await closeButton.waitFor({ timeout: 10_000 }).then(() => true, () => false)) {`,
+        `if (await closeButton.waitFor({ timeout: ${String(wait).replace(/\B(?=(\d{3})+$)/g, '_')} }).then(() => true, () => false)) {`,
         `${INDENT}await closeButton.click();`,
         `${INDENT}await closeButton.waitFor({ state: 'hidden' });`,
         '}',
       );
       break;
+    }
     case 'FILL': {
       if (step.value == null) {
         throw new PipelineError(ErrorCode.GENERATION_FAILED, `Step ${step.stepNumber} is a FILL with no value.`);
@@ -133,6 +135,14 @@ function emitStep(step, options) {
       if (!expected) throw unsupportedAssertion(step);
       // A placeholder is matched as plain text: the value is only known at run time.
       const fromEnvValue = valueExpression(expected, options.application);
+      if (resolveTarget(step.target, options.application).spec.textFrom === 'accessibleName') {
+        // An icon button has no visible text; its words live in its accessible
+        // name ("Mute keyboard shortcut m"). Whole words only, so "Mute" does
+        // not also match "Unmute".
+        const word = { source: `\\b${escapeRegExp(expected)}\\b`, flags: 'i' };
+        lines.push(`await expect(${locatorFor()}).toHaveAccessibleName(${regexLiteral(word)});`);
+        break;
+      }
       lines.push(`await expect(${locatorFor()}).toContainText(${fromEnvValue ?? regexLiteral(expected)});`);
       break;
     }

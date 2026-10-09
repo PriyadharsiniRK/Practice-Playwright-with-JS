@@ -43,18 +43,27 @@ test('TC-YT-006 - Open a video and verify its details', async ({ page }, testInf
     await testInfo.attach('Step 5', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 6: Verify that the video page is displayed', async () => {
-    await expect(page).toHaveURL(/\/watch/i);
+  await test.step('Step 6: Skip the ad if it is displayed', async () => {
+    const closeButton = page.locator('#movie_player .ytp-skip-ad-button, #movie_player .ytp-ad-skip-button, #movie_player .ytp-ad-skip-button-modern').first();
+    if (await closeButton.waitFor({ timeout: 15_000 }).then(() => true, () => false)) {
+      await closeButton.click();
+      await closeButton.waitFor({ state: 'hidden' });
+    }
     await testInfo.attach('Step 6', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 7: Verify that the video player is visible', async () => {
-    await expect(page.locator('#movie_player')).toBeVisible();
+  await test.step('Step 7: Verify that the video page is displayed', async () => {
+    await expect(page).toHaveURL(/\/watch/i);
     await testInfo.attach('Step 7', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 8: Verify that the video title contains "Playwright"', async () => {
-    await expect(page.locator('h1.ytd-watch-metadata')).toContainText(/Playwright/i);
+  await test.step('Step 8: Verify that the video player is visible', async () => {
+    await expect(page.locator('#movie_player')).toBeVisible();
     await testInfo.attach('Step 8', { body: await page.screenshot(), contentType: 'image/png' });
+  });
+
+  await test.step('Step 9: Verify that the video title contains "Playwright"', async () => {
+    await expect(page.locator('h1.ytd-watch-metadata')).toContainText(/Playwright/i);
+    await testInfo.attach('Step 9', { body: await page.screenshot(), contentType: 'image/png' });
   });
 });

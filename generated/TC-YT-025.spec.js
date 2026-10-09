@@ -43,18 +43,27 @@ test('TC-YT-025 - Open channel from a video', async ({ page }, testInfo) => {
     await testInfo.attach('Step 5', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 6: Click the channel name link', async () => {
-    await page.locator('#channel-name').click();
+  await test.step('Step 6: Skip the ad if it is displayed', async () => {
+    const closeButton = page.locator('#movie_player .ytp-skip-ad-button, #movie_player .ytp-ad-skip-button, #movie_player .ytp-ad-skip-button-modern').first();
+    if (await closeButton.waitFor({ timeout: 15_000 }).then(() => true, () => false)) {
+      await closeButton.click();
+      await closeButton.waitFor({ state: 'hidden' });
+    }
     await testInfo.attach('Step 6', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 7: Verify that the URL contains "/channel"', async () => {
-    await expect(page).toHaveURL(/\/channel/i);
+  await test.step('Step 7: Click the channel name link', async () => {
+    await page.locator('ytd-watch-metadata ytd-channel-name a').first().click();
     await testInfo.attach('Step 7', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 8: Verify that the channel page heading is visible', async () => {
-    await expect(page.locator('h1.channel-title')).toBeVisible();
+  await test.step('Step 8: Verify that the URL contains "/@"', async () => {
+    await expect(page).toHaveURL(/\/@/i);
     await testInfo.attach('Step 8', { body: await page.screenshot(), contentType: 'image/png' });
+  });
+
+  await test.step('Step 9: Verify that the channel page heading is visible', async () => {
+    await expect(page.locator('yt-page-header-renderer h1').first()).toBeVisible();
+    await testInfo.attach('Step 9', { body: await page.screenshot(), contentType: 'image/png' });
   });
 });

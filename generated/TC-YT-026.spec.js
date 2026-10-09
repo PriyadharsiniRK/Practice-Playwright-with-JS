@@ -43,8 +43,17 @@ test('TC-YT-026 - Open the Comments section', async ({ page }, testInfo) => {
     await testInfo.attach('Step 5', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 6: Verify that the Comments section is visible', async () => {
-    await expect(page.locator('#comments')).toBeVisible();
+  await test.step('Step 6: Skip the ad if it is displayed', async () => {
+    const closeButton = page.locator('#movie_player .ytp-skip-ad-button, #movie_player .ytp-ad-skip-button, #movie_player .ytp-ad-skip-button-modern').first();
+    if (await closeButton.waitFor({ timeout: 15_000 }).then(() => true, () => false)) {
+      await closeButton.click();
+      await closeButton.waitFor({ state: 'hidden' });
+    }
     await testInfo.attach('Step 6', { body: await page.screenshot(), contentType: 'image/png' });
+  });
+
+  await test.step('Step 7: Verify that the Comments section is visible', async () => {
+    await expect(page.locator('ytd-comments#comments')).toBeVisible();
+    await testInfo.attach('Step 7', { body: await page.screenshot(), contentType: 'image/png' });
   });
 });

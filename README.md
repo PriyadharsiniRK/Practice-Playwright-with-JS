@@ -362,6 +362,11 @@ regions YouTube covers the page with a cookie-consent dialog that blocks every
 click. The step closes it with "Reject all" when it appears and does nothing
 when it does not, so the same test case runs everywhere.
 
+Test cases that open a video also say "Skip the ad if it is displayed" right
+after clicking it: a pre-roll ad often plays first, and its Skip button only
+appears a few seconds in. The step waits up to 15 seconds for it and carries
+on if no ad plays.
+
 **Normalised steps** (`npm run analyze -- TC-YT-001`)
 
 ```

@@ -45,6 +45,19 @@ export const youtube = {
       },
     },
     {
+      // A pre-roll ad can play before the video. Its skip button appears a few
+      // seconds in, so this optional step waits longer than the consent step.
+      id: 'youtube.skipAdButton',
+      description: 'video ad',
+      match: [/\b(ads?|advert\w*)\b/i],
+      spec: {
+        kind: 'css',
+        selector: '#movie_player .ytp-skip-ad-button, #movie_player .ytp-ad-skip-button, #movie_player .ytp-ad-skip-button-modern',
+        nth: 'first',
+        waitTimeout: 15_000,
+      },
+    },
+    {
       id: 'youtube.searchBox',
       description: 'YouTube search box',
       match: [/search\s*(box|bar|input|field|text\s*box)/i, /\bsearch\b.*\b(input|field)\b/i],
@@ -87,42 +100,45 @@ export const youtube = {
       id: 'youtube.noResultsMessage',
       description: 'no results message',
       match: [/no\s+results?\s*(message|text|found)?/i, /empty\s*results?/i],
-      spec: { kind: 'css', selector: '.no-results' },
+      spec: { kind: 'css', selector: 'ytd-background-promo-renderer' },
     },
     {
       id: 'youtube.playPauseButton',
       description: 'Play/Pause button',
       match: [/play\s*\/?\s*pause\s*(button)?/i, /\bplay\s*(button)?\b/i, /\bpause\s*(button)?\b/i],
       roleHints: ['button'],
-      spec: { kind: 'css', selector: '#play-pause' },
+      // Icon button: its words ("Play"/"Pause") are only in the accessible name.
+      spec: { kind: 'css', selector: '#movie_player .ytp-play-button', textFrom: 'accessibleName' },
     },
     {
       id: 'youtube.muteButton',
       description: 'Mute button',
       match: [/\b(un)?mute\s*(button|control|toggle)?\b/i],
       roleHints: ['button'],
-      spec: { kind: 'css', selector: '#mute' },
+      // Icon button: its words ("Mute"/"Unmute") are only in the accessible name.
+      spec: { kind: 'css', selector: '#movie_player .ytp-mute-button', textFrom: 'accessibleName' },
     },
     {
       id: 'youtube.fullScreenButton',
       description: 'Full screen button',
       match: [/full\s*screen\s*(button|control|toggle)?/i],
       roleHints: ['button'],
-      spec: { kind: 'css', selector: '#fullscreen' },
+      spec: { kind: 'css', selector: '#movie_player .ytp-fullscreen-button' },
     },
     {
       id: 'youtube.volumeSlider',
       description: 'volume slider',
       match: [/volume\s*(slider|control|bar)?/i],
       roleHints: ['slider'],
-      spec: { kind: 'css', selector: '#volume' },
+      // Expands while the pointer is over the mute button.
+      spec: { kind: 'css', selector: '#movie_player .ytp-volume-panel' },
     },
     {
       id: 'youtube.channelLink',
       description: 'channel name link',
       match: [/channel\s*(name|link)?/i, /creator\s*(name|link)?/i],
       roleHints: ['link'],
-      spec: { kind: 'css', selector: '#channel-name' },
+      spec: { kind: 'css', selector: 'ytd-watch-metadata ytd-channel-name a', nth: 'first' },
     },
     {
       id: 'youtube.channelTitle',
@@ -131,52 +147,54 @@ export const youtube = {
       // wording would be read as a document-title assertion.
       match: [/channel\s*page\s*(heading|title)/i, /channel\s*heading/i],
       roleHints: ['heading'],
-      spec: { kind: 'css', selector: 'h1.channel-title' },
+      spec: { kind: 'css', selector: 'yt-page-header-renderer h1', nth: 'first' },
     },
     {
       id: 'youtube.showMoreButton',
       description: 'Show more button on the description',
       match: [/show\s*more\s*(button)?/i, /expand\s*(the\s*)?description/i],
       roleHints: ['button'],
-      spec: { kind: 'css', selector: '#expand' },
+      spec: { kind: 'css', selector: 'ytd-watch-metadata #description-inline-expander #expand' },
     },
     {
       id: 'youtube.descriptionDetail',
       description: 'expanded description text',
       match: [/expanded\s*description/i, /description\s*(detail|more)/i],
-      spec: { kind: 'css', selector: '#description-more' },
+      // The "Show less" control is only shown while the description is expanded.
+      spec: { kind: 'css', selector: 'ytd-watch-metadata #description-inline-expander #collapse' },
     },
     {
       id: 'youtube.description',
       description: 'video description',
       match: [/\bdescription\b/i],
-      spec: { kind: 'css', selector: '#description' },
+      spec: { kind: 'css', selector: 'ytd-watch-metadata #description' },
     },
     {
       id: 'youtube.commentsSection',
       description: 'Comments section',
       match: [/comments?\s*(section|area|list)?/i],
-      spec: { kind: 'css', selector: '#comments' },
+      spec: { kind: 'css', selector: 'ytd-comments#comments' },
     },
     {
       id: 'youtube.likeButton',
       description: 'Like button',
       match: [/\blike\s*(button)?\b/i],
       roleHints: ['button'],
-      spec: { kind: 'css', selector: '#like-button' },
+      spec: { kind: 'css', selector: 'ytd-watch-metadata like-button-view-model button', nth: 'first' },
     },
     {
       id: 'youtube.subscribeButton',
       description: 'Subscribe button',
       match: [/subscribe\s*(button)?/i],
       roleHints: ['button'],
-      spec: { kind: 'css', selector: '#subscribe-button' },
+      spec: { kind: 'css', selector: 'ytd-watch-metadata #subscribe-button button', nth: 'first' },
     },
     {
       id: 'youtube.signInPrompt',
       description: 'sign-in prompt',
       match: [/sign[-\s]?in\s*(prompt|message|dialog)?/i],
-      spec: { kind: 'css', selector: '#signin-prompt' },
+      // The "Sign in" pop-up YouTube shows a signed-out viewer who likes or subscribes.
+      spec: { kind: 'css', selector: 'ytd-modal-with-title-and-button-renderer', nth: 'first' },
     },
     {
       id: 'youtube.videoTitle',

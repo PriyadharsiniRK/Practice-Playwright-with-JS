@@ -43,18 +43,27 @@ test('TC-YT-009 - Going back from a video restores the results list', async ({ p
     await testInfo.attach('Step 5', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 6: Verify that the video player is visible', async () => {
-    await expect(page.locator('#movie_player')).toBeVisible();
+  await test.step('Step 6: Skip the ad if it is displayed', async () => {
+    const closeButton = page.locator('#movie_player .ytp-skip-ad-button, #movie_player .ytp-ad-skip-button, #movie_player .ytp-ad-skip-button-modern').first();
+    if (await closeButton.waitFor({ timeout: 15_000 }).then(() => true, () => false)) {
+      await closeButton.click();
+      await closeButton.waitFor({ state: 'hidden' });
+    }
     await testInfo.attach('Step 6', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 7: Navigate back', async () => {
-    await page.goBack();
+  await test.step('Step 7: Verify that the video player is visible', async () => {
+    await expect(page.locator('#movie_player')).toBeVisible();
     await testInfo.attach('Step 7', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 8: Verify that search results are displayed', async () => {
-    await expect(page.locator('ytd-search')).toBeVisible();
+  await test.step('Step 8: Navigate back', async () => {
+    await page.goBack();
     await testInfo.attach('Step 8', { body: await page.screenshot(), contentType: 'image/png' });
+  });
+
+  await test.step('Step 9: Verify that search results are displayed', async () => {
+    await expect(page.locator('ytd-search')).toBeVisible();
+    await testInfo.attach('Step 9', { body: await page.screenshot(), contentType: 'image/png' });
   });
 });

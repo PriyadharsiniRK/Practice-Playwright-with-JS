@@ -43,23 +43,37 @@ test('TC-YT-020 - Play and pause a video', async ({ page }, testInfo) => {
     await testInfo.attach('Step 5', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 6: Click the Play button', async () => {
-    await page.locator('#play-pause').click();
+  await test.step('Step 6: Skip the ad if it is displayed', async () => {
+    const closeButton = page.locator('#movie_player .ytp-skip-ad-button, #movie_player .ytp-ad-skip-button, #movie_player .ytp-ad-skip-button-modern').first();
+    if (await closeButton.waitFor({ timeout: 15_000 }).then(() => true, () => false)) {
+      await closeButton.click();
+      await closeButton.waitFor({ state: 'hidden' });
+    }
     await testInfo.attach('Step 6', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
   await test.step('Step 7: Verify that the Play button contains "Pause"', async () => {
-    await expect(page.locator('#play-pause')).toContainText(/Pause/i);
+    await expect(page.locator('#movie_player .ytp-play-button')).toHaveAccessibleName(/\bPause\b/i);
     await testInfo.attach('Step 7', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
   await test.step('Step 8: Click the Play button', async () => {
-    await page.locator('#play-pause').click();
+    await page.locator('#movie_player .ytp-play-button').click();
     await testInfo.attach('Step 8', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
   await test.step('Step 9: Verify that the Play button contains "Play"', async () => {
-    await expect(page.locator('#play-pause')).toContainText(/Play/i);
+    await expect(page.locator('#movie_player .ytp-play-button')).toHaveAccessibleName(/\bPlay\b/i);
     await testInfo.attach('Step 9', { body: await page.screenshot(), contentType: 'image/png' });
+  });
+
+  await test.step('Step 10: Click the Play button', async () => {
+    await page.locator('#movie_player .ytp-play-button').click();
+    await testInfo.attach('Step 10', { body: await page.screenshot(), contentType: 'image/png' });
+  });
+
+  await test.step('Step 11: Verify that the Play button contains "Pause"', async () => {
+    await expect(page.locator('#movie_player .ytp-play-button')).toHaveAccessibleName(/\bPause\b/i);
+    await testInfo.attach('Step 11', { body: await page.screenshot(), contentType: 'image/png' });
   });
 });
