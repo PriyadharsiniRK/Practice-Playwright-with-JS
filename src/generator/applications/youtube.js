@@ -45,8 +45,9 @@ export const youtube = {
       },
     },
     {
-      // A pre-roll ad can play before the video. Its skip button appears a few
-      // seconds in, so this optional step waits longer than the consent step.
+      // One or more ads can play before the video, skippable or not. While any
+      // ad plays YouTube marks the player with the "ad-showing" class, so the
+      // step waits for that class to go, clicking Skip whenever it is offered.
       id: 'youtube.skipAdButton',
       description: 'video ad',
       match: [/\b(ads?|advert\w*)\b/i],
@@ -54,7 +55,11 @@ export const youtube = {
         kind: 'css',
         selector: '#movie_player .ytp-skip-ad-button, #movie_player .ytp-ad-skip-button, #movie_player .ytp-ad-skip-button-modern',
         nth: 'first',
-        waitTimeout: 15_000,
+        whileShowing: '#movie_player.ad-showing',
+        // Ads start a moment after the page loads; unskippable ones run up to
+        // about 30 seconds, and YouTube may play two in a row.
+        appearTimeout: 5_000,
+        waitTimeout: 90_000,
       },
     },
     {

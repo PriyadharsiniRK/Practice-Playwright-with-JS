@@ -110,7 +110,7 @@ test('"Close the cookie consent dialog if it is displayed" is an optional DISMIS
   assert.match(code, /await closeButton\.click\(\);/);
 });
 
-test('"Skip the ad if it is displayed" is an optional DISMISS step with a longer wait', async () => {
+test('"Skip the ad if it is displayed" waits out skippable and unskippable ads', async () => {
   const canonical = await analyzeTestCase(
     {
       id: 'TC-YT-AD',
@@ -125,8 +125,13 @@ test('"Skip the ad if it is displayed" is an optional DISMISS step with a longer
   assert.equal(canonical.steps[1].action, 'DISMISS');
   assert.equal(resolveTarget(canonical.steps[1].target, applicationById('youtube')).catalogId, 'youtube.skipAdButton');
   const { code } = generateSpec(canonical, { screenshots: false });
-  // The skip button only appears a few seconds into the ad.
-  assert.match(code, /closeButton\.waitFor\(\{ timeout: 15_000 \}\)/);
+  // Waits while any ad plays, skippable or not, clicking Skip when offered.
+  assert.match(code, /const showing = page\.locator\('#movie_player\.ad-showing'\);/);
+  assert.match(code, /if \(await closeButton\.isVisible\(\)\) await closeButton\.click\(\);/);
+  assert.match(code, /await expect\(showing\)\.toHaveCount\(0, \{ timeout: 1_000 \}\);/);
+  // Still gone 2 seconds later: a gap between two ads is not the end.
+  assert.match(code, /await page\.waitForTimeout\(2_000\);\n\s*expect\(await showing\.count\(\)\)\.toBe\(0\);/);
+  assert.match(code, /\}\)\.toPass\(\{ timeout: 90_000 \}\);/);
 });
 
 test('text checks on YouTube icon buttons read the accessible name, whole words only', async () => {

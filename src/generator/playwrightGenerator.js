@@ -94,10 +94,31 @@ function emitStep(step, options) {
     case 'DISMISS': {
       // An optional pop-up (cookie consent, a skippable ad): shown in some
       // regions or on some visits only. Close it when it appears; carry on when not.
-      const wait = resolveTarget(step.target, options.application).spec.waitTimeout ?? 10_000;
+      const spec = resolveTarget(step.target, options.application).spec;
+      const ms = (value) => String(value).replace(/\B(?=(\d{3})+$)/g, '_');
+      if (spec.whileShowing) {
+        // Something that keeps the page busy for a while (a run of video ads):
+        // wait until it is gone, clicking its close button whenever offered.
+        // "Gone" means gone for 2 seconds, so a short gap between two ads in a
+        // row is not mistaken for the end.
+        lines.push(
+          `const showing = page.locator(${quote(spec.whileShowing)});`,
+          `const closeButton = ${locatorFor()};`,
+          `if (await showing.waitFor({ state: 'attached', timeout: ${ms(spec.appearTimeout ?? 5_000)} }).then(() => true, () => false)) {`,
+          `${INDENT}await expect(async () => {`,
+          `${INDENT}${INDENT}if (await closeButton.isVisible()) await closeButton.click();`,
+          `${INDENT}${INDENT}await expect(showing).toHaveCount(0, { timeout: 1_000 });`,
+          `${INDENT}${INDENT}await page.waitForTimeout(2_000);`,
+          `${INDENT}${INDENT}expect(await showing.count()).toBe(0);`,
+          `${INDENT}}).toPass({ timeout: ${ms(spec.waitTimeout ?? 60_000)} });`,
+          '}',
+        );
+        break;
+      }
+      const wait = spec.waitTimeout ?? 10_000;
       lines.push(
         `const closeButton = ${locatorFor()};`,
-        `if (await closeButton.waitFor({ timeout: ${String(wait).replace(/\B(?=(\d{3})+$)/g, '_')} }).then(() => true, () => false)) {`,
+        `if (await closeButton.waitFor({ timeout: ${ms(wait)} }).then(() => true, () => false)) {`,
         `${INDENT}await closeButton.click();`,
         `${INDENT}await closeButton.waitFor({ state: 'hidden' });`,
         '}',
