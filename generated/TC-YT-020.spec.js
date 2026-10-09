@@ -58,27 +58,27 @@ test('TC-YT-020 - Play and pause a video', async ({ page }, testInfo) => {
   });
 
   await test.step('Step 7: Verify that the Play button contains "Pause"', async () => {
-    await expect(page.locator('#movie_player .ytp-play-button')).toHaveAccessibleName(/\bPause\b/i);
+    await expect(page.locator('#movie_player .ytp-chrome-bottom').getByRole('button', { name: /\b(play|pause)\b/i }).first()).toHaveAccessibleName(/\bPause\b/i);
     await testInfo.attach('Step 7', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
   await test.step('Step 8: Click the Play button', async () => {
-    await page.locator('#movie_player .ytp-play-button').click();
+    await page.locator('#movie_player .ytp-chrome-bottom').getByRole('button', { name: /\b(play|pause)\b/i }).first().click();
     await testInfo.attach('Step 8', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
   await test.step('Step 9: Verify that the Play button contains "Play"', async () => {
-    await expect(page.locator('#movie_player .ytp-play-button')).toHaveAccessibleName(/\bPlay\b/i);
+    await expect(page.locator('#movie_player .ytp-chrome-bottom').getByRole('button', { name: /\b(play|pause)\b/i }).first()).toHaveAccessibleName(/\bPlay\b/i);
     await testInfo.attach('Step 9', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
   await test.step('Step 10: Click the Play button', async () => {
-    await page.locator('#movie_player .ytp-play-button').click();
+    await page.locator('#movie_player .ytp-chrome-bottom').getByRole('button', { name: /\b(play|pause)\b/i }).first().click();
     await testInfo.attach('Step 10', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
   await test.step('Step 11: Verify that the Play button contains "Pause"', async () => {
-    await expect(page.locator('#movie_player .ytp-play-button')).toHaveAccessibleName(/\bPause\b/i);
+    await expect(page.locator('#movie_player .ytp-chrome-bottom').getByRole('button', { name: /\b(play|pause)\b/i }).first()).toHaveAccessibleName(/\bPause\b/i);
     await testInfo.attach('Step 11', { body: await page.screenshot(), contentType: 'image/png' });
   });
 });

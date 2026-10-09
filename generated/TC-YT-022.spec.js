@@ -58,22 +58,22 @@ test('TC-YT-022 - Toggle mute', async ({ page }, testInfo) => {
   });
 
   await test.step('Step 7: Click the Mute button', async () => {
-    await page.locator('#movie_player .ytp-mute-button').click();
+    await page.locator('#movie_player .ytp-chrome-bottom').getByRole('button', { name: /\b(un)?mute\b/i }).first().click();
     await testInfo.attach('Step 7', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
   await test.step('Step 8: Verify that the Mute button contains "Unmute"', async () => {
-    await expect(page.locator('#movie_player .ytp-mute-button')).toHaveAccessibleName(/\bUnmute\b/i);
+    await expect(page.locator('#movie_player .ytp-chrome-bottom').getByRole('button', { name: /\b(un)?mute\b/i }).first()).toHaveAccessibleName(/\bUnmute\b/i);
     await testInfo.attach('Step 8', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
   await test.step('Step 9: Click the Mute button', async () => {
-    await page.locator('#movie_player .ytp-mute-button').click();
+    await page.locator('#movie_player .ytp-chrome-bottom').getByRole('button', { name: /\b(un)?mute\b/i }).first().click();
     await testInfo.attach('Step 9', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
   await test.step('Step 10: Verify that the Mute button contains "Mute"', async () => {
-    await expect(page.locator('#movie_player .ytp-mute-button')).toHaveAccessibleName(/\bMute\b/i);
+    await expect(page.locator('#movie_player .ytp-chrome-bottom').getByRole('button', { name: /\b(un)?mute\b/i }).first()).toHaveAccessibleName(/\bMute\b/i);
     await testInfo.attach('Step 10', { body: await page.screenshot(), contentType: 'image/png' });
   });
 });

@@ -32,24 +32,27 @@ function regexLiteral(pattern) {
 
 /** Turns a locator spec into Playwright locator source. */
 export function emitLocator(spec) {
+  // `within` narrows the search to one area of the page, e.g. the video
+  // player's control bar, so a generic name like "Mute" cannot match elsewhere.
+  const scope = spec.within ? `page.locator(${quote(spec.within)})` : 'page';
   let expression;
   switch (spec.kind) {
     case 'role': {
       const options = spec.name ? `, { name: ${regexLiteral(spec.name)} }` : '';
-      expression = `page.getByRole(${quote(spec.role)}${options})`;
+      expression = `${scope}.getByRole(${quote(spec.role)}${options})`;
       break;
     }
     case 'label':
-      expression = `page.getByLabel(${regexLiteral(spec.text)})`;
+      expression = `${scope}.getByLabel(${regexLiteral(spec.text)})`;
       break;
     case 'placeholder':
-      expression = `page.getByPlaceholder(${regexLiteral(spec.text)})`;
+      expression = `${scope}.getByPlaceholder(${regexLiteral(spec.text)})`;
       break;
     case 'text':
-      expression = `page.getByText(${regexLiteral(spec.text)})`;
+      expression = `${scope}.getByText(${regexLiteral(spec.text)})`;
       break;
     case 'css':
-      expression = `page.locator(${quote(spec.selector)})`;
+      expression = `${scope}.locator(${quote(spec.selector)})`;
       break;
     default:
       throw new PipelineError(ErrorCode.GENERATION_FAILED, `Unknown locator strategy "${spec.kind}".`);

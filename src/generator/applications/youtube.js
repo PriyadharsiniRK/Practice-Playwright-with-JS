@@ -112,16 +112,33 @@ export const youtube = {
       description: 'Play/Pause button',
       match: [/play\s*\/?\s*pause\s*(button)?/i, /\bplay\s*(button)?\b/i, /\bpause\s*(button)?\b/i],
       roleHints: ['button'],
-      // Icon button: its words ("Play"/"Pause") are only in the accessible name.
-      spec: { kind: 'css', selector: '#movie_player .ytp-play-button', textFrom: 'accessibleName' },
+      // Found by role and accessible name inside the player's control bar: YouTube
+      // has shipped this control both as <button class="ytp-play-button"> and as a
+      // <div class="ytp-play-button"> wrapping the real, labelled button. Its words
+      // ("Play"/"Pause") are only in that label.
+      spec: {
+        kind: 'role',
+        role: 'button',
+        name: { source: '\\b(play|pause)\\b', flags: 'i' },
+        within: '#movie_player .ytp-chrome-bottom',
+        nth: 'first',
+        textFrom: 'accessibleName',
+      },
     },
     {
       id: 'youtube.muteButton',
       description: 'Mute button',
       match: [/\b(un)?mute\s*(button|control|toggle)?\b/i],
       roleHints: ['button'],
-      // Icon button: its words ("Mute"/"Unmute") are only in the accessible name.
-      spec: { kind: 'css', selector: '#movie_player .ytp-mute-button', textFrom: 'accessibleName' },
+      // Same as the Play button: role + accessible name, whatever wraps it.
+      spec: {
+        kind: 'role',
+        role: 'button',
+        name: { source: '\\b(un)?mute\\b', flags: 'i' },
+        within: '#movie_player .ytp-chrome-bottom',
+        nth: 'first',
+        textFrom: 'accessibleName',
+      },
     },
     {
       id: 'youtube.fullScreenButton',

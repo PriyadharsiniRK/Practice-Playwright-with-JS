@@ -147,7 +147,11 @@ test('text checks on YouTube icon buttons read the accessible name, whole words 
     { provider: createProvider('heuristic') },
   );
   const { code } = generateSpec(canonical, { screenshots: false });
+  // Found by role + name inside the control bar, whatever element wraps it:
+  // the live player has shipped .ytp-mute-button as a label-less <div>.
+  const mute = "page.locator('#movie_player .ytp-chrome-bottom').getByRole('button', { name: /\\b(un)?mute\\b/i }).first()";
+  assert.ok(code.includes(`await expect(${mute}).toHaveAccessibleName(/\\bMute\\b/i);`), code);
   // "Mute" must not also match "Unmute".
-  assert.match(code, /expect\(page\.locator\('#movie_player \.ytp-mute-button'\)\)\.toHaveAccessibleName\(\/\\bMute\\b\/i\)/);
+  assert.ok(/\/\\bMute\\b\/i/.test(code));
   assert.doesNotMatch(code, /toContainText/);
 });
