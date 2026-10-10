@@ -3,7 +3,7 @@
 // Produced by playwright-test-generator from a manual test case.
 //   test case : TC-TNEB-003
 //   application: TNEB
-//   source    : input/tneb-tests.docx
+//   source    : input/tneb-tests.xlsx
 //   analyzer  : heuristic
 //   screenshots: one per step
 //   secrets   : TNEB_MOBILE_NO (from .env - never stored here)
@@ -44,17 +44,17 @@ test('TC-TNEB-003 - Malformed details return no invoice', async ({ page }, testI
   });
 
   await test.step('Step 3: Enter "12345" in the Consumer No box', async () => {
-    await page.getByRole('textbox', { name: /consumer\s*(no|number)/i }).fill('12345');
+    await page.locator('xpath=//*[text()[contains(normalize-space(), "Consumer No")]]/following::input[1]').fill('12345');
     await testInfo.attach('Step 3', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
   await test.step('Step 4: Enter "<mobile no>" in the Registered Mobile No box', async () => {
-    await page.getByRole('textbox', { name: /mobile\s*(no|number)/i }).fill(fromEnv('TNEB_MOBILE_NO'));
+    await page.locator('xpath=//*[text()[contains(normalize-space(), "Registered Mobile No")]]/following::input[1]').fill(fromEnv('TNEB_MOBILE_NO'));
     await testInfo.attach('Step 4', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
   await test.step('Step 5: Enter "092026" in the Bill Month/Year box', async () => {
-    await page.getByRole('textbox', { name: /month\s*\/?\s*year/i }).fill('092026');
+    await page.locator('xpath=//*[text()[contains(normalize-space(), "Bill Month/Year")]]/following::input[1]').fill('092026');
     await testInfo.attach('Step 5', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
