@@ -52,7 +52,8 @@ export const saucedemo = {
       description: 'Products heading on the inventory page',
       match: [/products?\s*(heading|title|header)/i, /^products$/i],
       roleHints: ['heading'],
-      spec: { kind: 'role', role: 'heading', name: { source: '^products$', flags: 'i' } },
+      // A <span class="title"> on the live site, not a heading element.
+      spec: { kind: 'css', selector: '.title', hasText: { source: '^\\s*products\\s*$', flags: 'i' } },
     },
     {
       id: 'saucedemo.loginError',
@@ -141,7 +142,9 @@ export const saucedemo = {
       description: 'product sorting dropdown',
       match: [/sort(ing)?\s*(dropdown|drop\s*down|select|combo\s*box|box)?/i, /product\s*sort/i],
       roleHints: ['combobox'],
-      spec: { kind: 'css', selector: '[data-test="product_sort_container"]' },
+      // The class has stayed put; the data-test value changed from
+      // product_sort_container to product-sort-container on the live site.
+      spec: { kind: 'css', selector: 'select.product_sort_container' },
     },
     {
       id: 'saucedemo.firstProductPrice',

@@ -24,12 +24,12 @@ test('TC-SD-005 - Product Sorting', async ({ page }, testInfo) => {
   });
 
   await test.step('Step 1: Open product sorting dropdown', async () => {
-    await page.locator('[data-test="product_sort_container"]').click();
+    await page.locator('select.product_sort_container').click();
     await testInfo.attach('Step 1', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
   await test.step('Step 2: Select Price low to high', async () => {
-    await page.locator('[data-test="product_sort_container"]').selectOption({ label: 'Price (low to high)' });
+    await page.locator('select.product_sort_container').selectOption({ label: 'Price (low to high)' });
     await testInfo.attach('Step 2', { body: await page.screenshot(), contentType: 'image/png' });
   });
 

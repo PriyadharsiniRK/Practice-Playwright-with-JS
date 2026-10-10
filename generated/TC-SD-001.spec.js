@@ -36,7 +36,7 @@ test('TC-SD-001 - Valid Login', async ({ page }, testInfo) => {
   });
 
   await test.step('Step 4: Verify Products heading', async () => {
-    await expect(page.getByRole('heading', { name: /^products$/i })).toBeVisible();
+    await expect(page.locator('.title').filter({ hasText: /^\s*products\s*$/i })).toBeVisible();
     await testInfo.attach('Step 4', { body: await page.screenshot(), contentType: 'image/png' });
   });
 });
