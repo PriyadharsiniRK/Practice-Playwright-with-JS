@@ -9,6 +9,37 @@ import path from 'node:path';
 import { ErrorCode, PipelineError } from '../errors.js';
 
 const REPORT_PATH = path.join('reports', 'index.html');
+/** Written by the 'json' reporter configured in playwright.config.js. */
+const RESULTS_PATH = path.join('test-results', 'results.json');
+
+/**
+ * Per-test-case outcome of the last run, keyed by test case id.
+ *
+ * Generated tests are titled "<id> - <title>", so the id is everything before
+ * the first " - ". Statuses are Playwright's: 'expected' (passed),
+ * 'unexpected' (failed), 'flaky' (passed on retry) and 'skipped'.
+ *
+ * @returns {Map<string, 'passed' | 'failed' | 'flaky' | 'skipped'>}
+ */
+export function readResults(resultsPath = RESULTS_PATH) {
+  const outcomes = new Map();
+  let report;
+  try {
+    report = JSON.parse(fs.readFileSync(resultsPath, 'utf8'));
+  } catch {
+    return outcomes;
+  }
+  const label = { expected: 'passed', unexpected: 'failed', flaky: 'flaky', skipped: 'skipped' };
+  const visit = (suite) => {
+    for (const spec of suite.specs ?? []) {
+      const id = spec.title.split(' - ')[0];
+      for (const test of spec.tests ?? []) outcomes.set(id, label[test.status] ?? test.status);
+    }
+    for (const child of suite.suites ?? []) visit(child);
+  };
+  for (const suite of report.suites ?? []) visit(suite);
+  return outcomes;
+}
 
 /**
  * `playwright test <file>` treats its arguments as regular expressions matched
@@ -114,4 +145,4 @@ export function showReport(reportDir) {
   return new Promise((resolve) => child.on('close', (code) => resolve(code ?? 0)));
 }
 
-export { REPORT_PATH };
+export { REPORT_PATH, RESULTS_PATH };

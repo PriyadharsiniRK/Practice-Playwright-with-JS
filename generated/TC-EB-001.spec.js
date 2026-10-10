@@ -44,17 +44,17 @@ test('TC-EB-001 - Login into EB Website', async ({ page }, testInfo) => {
   });
 
   await test.step('Step 3: Enter “<consumer no>” in the Consumer No field', async () => {
-    await page.getByRole('textbox', { name: /consumer\s*(no|number)/i }).fill(fromEnv('TNEB_CONSUMER_NO'));
+    await page.locator('xpath=//*[text()[contains(normalize-space(), "Consumer No")]]/following::input[1]').fill(fromEnv('TNEB_CONSUMER_NO'));
     await testInfo.attach('Step 3', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
   await test.step('Step 4: Enter “<mobile no>” in the Registered Mobile No field', async () => {
-    await page.getByRole('textbox', { name: /mobile\s*(no|number)/i }).fill(fromEnv('TNEB_MOBILE_NO'));
+    await page.locator('xpath=//*[text()[contains(normalize-space(), "Registered Mobile No")]]/following::input[1]').fill(fromEnv('TNEB_MOBILE_NO'));
     await testInfo.attach('Step 4', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
   await test.step('Step 5: Enter “092026” in the Bill Month/Year field', async () => {
-    await page.getByRole('textbox', { name: /month\s*\/?\s*year/i }).fill('092026');
+    await page.locator('xpath=//*[text()[contains(normalize-space(), "Bill Month/Year")]]/following::input[1]').fill('092026');
     await testInfo.attach('Step 5', { body: await page.screenshot(), contentType: 'image/png' });
   });
 

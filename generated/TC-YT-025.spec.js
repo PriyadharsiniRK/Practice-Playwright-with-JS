@@ -43,18 +43,32 @@ test('TC-YT-025 - Open channel from a video', async ({ page }, testInfo) => {
     await testInfo.attach('Step 5', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 6: Click the channel name link', async () => {
-    await page.locator('#channel-name').click();
+  await test.step('Step 6: Skip the ad if it is displayed', async () => {
+    const showing = page.locator('#movie_player.ad-showing');
+    const closeButton = page.locator('#movie_player .ytp-skip-ad-button, #movie_player .ytp-ad-skip-button, #movie_player .ytp-ad-skip-button-modern').first();
+    if (await showing.waitFor({ state: 'attached', timeout: 5_000 }).then(() => true, () => false)) {
+      await expect(async () => {
+        if (await closeButton.isVisible()) await closeButton.click();
+        await expect(showing).toHaveCount(0, { timeout: 1_000 });
+        await page.waitForTimeout(2_000);
+        expect(await showing.count()).toBe(0);
+      }).toPass({ timeout: 90_000 });
+    }
     await testInfo.attach('Step 6', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 7: Verify that the URL contains "/channel"', async () => {
-    await expect(page).toHaveURL(/\/channel/i);
+  await test.step('Step 7: Click the channel name link', async () => {
+    await page.locator('ytd-watch-metadata ytd-channel-name a').first().click();
     await testInfo.attach('Step 7', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 8: Verify that the channel page heading is visible', async () => {
-    await expect(page.locator('h1.channel-title')).toBeVisible();
+  await test.step('Step 8: Verify that the URL contains "/@"', async () => {
+    await expect(page).toHaveURL(/\/@/i);
     await testInfo.attach('Step 8', { body: await page.screenshot(), contentType: 'image/png' });
+  });
+
+  await test.step('Step 9: Verify that the channel page heading is visible', async () => {
+    await expect(page.locator('yt-page-header-renderer h1').first()).toBeVisible();
+    await testInfo.attach('Step 9', { body: await page.screenshot(), contentType: 'image/png' });
   });
 });

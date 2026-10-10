@@ -109,3 +109,49 @@ test('"Close the cookie consent dialog if it is displayed" is an optional DISMIS
   assert.match(code, /if \(await closeButton\.waitFor\(\{ timeout: 10_000 \}\)\.then\(\(\) => true, \(\) => false\)\) \{/);
   assert.match(code, /await closeButton\.click\(\);/);
 });
+
+test('"Skip the ad if it is displayed" waits out skippable and unskippable ads', async () => {
+  const canonical = await analyzeTestCase(
+    {
+      id: 'TC-YT-AD',
+      title: 'Ad',
+      steps: [
+        { stepNumber: 1, text: 'Open https://www.youtube.com' },
+        { stepNumber: 2, text: 'Skip the ad if it is displayed' },
+      ],
+    },
+    { provider: createProvider('heuristic') },
+  );
+  assert.equal(canonical.steps[1].action, 'DISMISS');
+  assert.equal(resolveTarget(canonical.steps[1].target, applicationById('youtube')).catalogId, 'youtube.skipAdButton');
+  const { code } = generateSpec(canonical, { screenshots: false });
+  // Waits while any ad plays, skippable or not, clicking Skip when offered.
+  assert.match(code, /const showing = page\.locator\('#movie_player\.ad-showing'\);/);
+  assert.match(code, /if \(await closeButton\.isVisible\(\)\) await closeButton\.click\(\);/);
+  assert.match(code, /await expect\(showing\)\.toHaveCount\(0, \{ timeout: 1_000 \}\);/);
+  // Still gone 2 seconds later: a gap between two ads is not the end.
+  assert.match(code, /await page\.waitForTimeout\(2_000\);\n\s*expect\(await showing\.count\(\)\)\.toBe\(0\);/);
+  assert.match(code, /\}\)\.toPass\(\{ timeout: 90_000 \}\);/);
+});
+
+test('text checks on YouTube icon buttons read the accessible name, whole words only', async () => {
+  const canonical = await analyzeTestCase(
+    {
+      id: 'TC-YT-MUTE',
+      title: 'Mute',
+      steps: [
+        { stepNumber: 1, text: 'Open https://www.youtube.com' },
+        { stepNumber: 2, text: 'Verify that the Mute button contains "Mute"' },
+      ],
+    },
+    { provider: createProvider('heuristic') },
+  );
+  const { code } = generateSpec(canonical, { screenshots: false });
+  // Found by role + name inside the control bar, whatever element wraps it:
+  // the live player has shipped .ytp-mute-button as a label-less <div>.
+  const mute = "page.locator('#movie_player .ytp-chrome-bottom').getByRole('button', { name: /\\b(un)?mute\\b/i }).first()";
+  assert.ok(code.includes(`await expect(${mute}).toHaveAccessibleName(/\\bMute\\b/i);`), code);
+  // "Mute" must not also match "Unmute".
+  assert.ok(/\/\\bMute\\b\/i/.test(code));
+  assert.doesNotMatch(code, /toContainText/);
+});

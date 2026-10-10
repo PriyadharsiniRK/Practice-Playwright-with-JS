@@ -70,6 +70,8 @@ export default defineConfig({
     // file with the screenshots embedded, so it opens without a server. Listed
     // after 'html' so it is written after that reporter has reset reports/.
     ['./src/report/stepReporter.js', { outputFile: 'reports/step-report.html' }],
+    // Machine-readable results, so the CLI can say which test cases passed.
+    ['json', { outputFile: 'test-results/results.json' }],
   ],
 
   use: {

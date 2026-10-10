@@ -32,24 +32,27 @@ function regexLiteral(pattern) {
 
 /** Turns a locator spec into Playwright locator source. */
 export function emitLocator(spec) {
+  // `within` narrows the search to one area of the page, e.g. the video
+  // player's control bar, so a generic name like "Mute" cannot match elsewhere.
+  const scope = spec.within ? `page.locator(${quote(spec.within)})` : 'page';
   let expression;
   switch (spec.kind) {
     case 'role': {
       const options = spec.name ? `, { name: ${regexLiteral(spec.name)} }` : '';
-      expression = `page.getByRole(${quote(spec.role)}${options})`;
+      expression = `${scope}.getByRole(${quote(spec.role)}${options})`;
       break;
     }
     case 'label':
-      expression = `page.getByLabel(${regexLiteral(spec.text)})`;
+      expression = `${scope}.getByLabel(${regexLiteral(spec.text)})`;
       break;
     case 'placeholder':
-      expression = `page.getByPlaceholder(${regexLiteral(spec.text)})`;
+      expression = `${scope}.getByPlaceholder(${regexLiteral(spec.text)})`;
       break;
     case 'text':
-      expression = `page.getByText(${regexLiteral(spec.text)})`;
+      expression = `${scope}.getByText(${regexLiteral(spec.text)})`;
       break;
     case 'css':
-      expression = `page.locator(${quote(spec.selector)})`;
+      expression = `${scope}.locator(${quote(spec.selector)})`;
       break;
     default:
       throw new PipelineError(ErrorCode.GENERATION_FAILED, `Unknown locator strategy "${spec.kind}".`);
@@ -91,17 +94,40 @@ function emitStep(step, options) {
     case 'CLICK':
       lines.push(`await ${locatorFor()}.click();`);
       break;
-    case 'DISMISS':
-      // An optional pop-up (cookie consent and the like): shown in some regions
-      // or on some visits only. Close it when it appears; carry on when not.
+    case 'DISMISS': {
+      // An optional pop-up (cookie consent, a skippable ad): shown in some
+      // regions or on some visits only. Close it when it appears; carry on when not.
+      const spec = resolveTarget(step.target, options.application).spec;
+      const ms = (value) => String(value).replace(/\B(?=(\d{3})+$)/g, '_');
+      if (spec.whileShowing) {
+        // Something that keeps the page busy for a while (a run of video ads):
+        // wait until it is gone, clicking its close button whenever offered.
+        // "Gone" means gone for 2 seconds, so a short gap between two ads in a
+        // row is not mistaken for the end.
+        lines.push(
+          `const showing = page.locator(${quote(spec.whileShowing)});`,
+          `const closeButton = ${locatorFor()};`,
+          `if (await showing.waitFor({ state: 'attached', timeout: ${ms(spec.appearTimeout ?? 5_000)} }).then(() => true, () => false)) {`,
+          `${INDENT}await expect(async () => {`,
+          `${INDENT}${INDENT}if (await closeButton.isVisible()) await closeButton.click();`,
+          `${INDENT}${INDENT}await expect(showing).toHaveCount(0, { timeout: 1_000 });`,
+          `${INDENT}${INDENT}await page.waitForTimeout(2_000);`,
+          `${INDENT}${INDENT}expect(await showing.count()).toBe(0);`,
+          `${INDENT}}).toPass({ timeout: ${ms(spec.waitTimeout ?? 60_000)} });`,
+          '}',
+        );
+        break;
+      }
+      const wait = spec.waitTimeout ?? 10_000;
       lines.push(
         `const closeButton = ${locatorFor()};`,
-        `if (await closeButton.waitFor({ timeout: 10_000 }).then(() => true, () => false)) {`,
+        `if (await closeButton.waitFor({ timeout: ${ms(wait)} }).then(() => true, () => false)) {`,
         `${INDENT}await closeButton.click();`,
         `${INDENT}await closeButton.waitFor({ state: 'hidden' });`,
         '}',
       );
       break;
+    }
     case 'FILL': {
       if (step.value == null) {
         throw new PipelineError(ErrorCode.GENERATION_FAILED, `Step ${step.stepNumber} is a FILL with no value.`);
@@ -133,6 +159,14 @@ function emitStep(step, options) {
       if (!expected) throw unsupportedAssertion(step);
       // A placeholder is matched as plain text: the value is only known at run time.
       const fromEnvValue = valueExpression(expected, options.application);
+      if (resolveTarget(step.target, options.application).spec.textFrom === 'accessibleName') {
+        // An icon button has no visible text; its words live in its accessible
+        // name ("Mute keyboard shortcut m"). Whole words only, so "Mute" does
+        // not also match "Unmute".
+        const word = { source: `\\b${escapeRegExp(expected)}\\b`, flags: 'i' };
+        lines.push(`await expect(${locatorFor()}).toHaveAccessibleName(${regexLiteral(word)});`);
+        break;
+      }
       lines.push(`await expect(${locatorFor()}).toContainText(${fromEnvValue ?? regexLiteral(expected)});`);
       break;
     }

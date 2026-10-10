@@ -3,7 +3,7 @@
 // Produced by playwright-test-generator from a manual test case.
 //   test case : TC-TNEB-002
 //   application: TNEB
-//   source    : input/tneb-tests.docx
+//   source    : input/tneb-tests.xlsx
 //   analyzer  : heuristic
 //   screenshots: one per step
 // Re-run `npm run generate` after editing the manual test case.
@@ -25,7 +25,7 @@ test('TC-TNEB-002 - The e-Invoice form is reachable without signing in', async (
   });
 
   await test.step('Step 3: Verify that the Consumer No box is not visible', async () => {
-    await expect(page.getByRole('textbox', { name: /consumer\s*(no|number)/i })).toBeHidden();
+    await expect(page.locator('xpath=//*[text()[contains(normalize-space(), "Consumer No")]]/following::input[1]')).toBeHidden();
     await testInfo.attach('Step 3', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
@@ -35,7 +35,7 @@ test('TC-TNEB-002 - The e-Invoice form is reachable without signing in', async (
   });
 
   await test.step('Step 5: Verify that the Consumer No box is visible', async () => {
-    await expect(page.getByRole('textbox', { name: /consumer\s*(no|number)/i })).toBeVisible();
+    await expect(page.locator('xpath=//*[text()[contains(normalize-space(), "Consumer No")]]/following::input[1]')).toBeVisible();
     await testInfo.attach('Step 5', { body: await page.screenshot(), contentType: 'image/png' });
   });
 

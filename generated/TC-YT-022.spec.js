@@ -28,8 +28,8 @@ test('TC-YT-022 - Toggle mute', async ({ page }, testInfo) => {
     await testInfo.attach('Step 2', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 3: Enter "Playwright automation" in the search box', async () => {
-    await page.getByRole('combobox', { name: /search/i }).fill('Playwright automation');
+  await test.step('Step 3: Enter "playwright automation tutorial in tamil" in the search box', async () => {
+    await page.getByRole('combobox', { name: /search/i }).fill('playwright automation tutorial in tamil');
     await testInfo.attach('Step 3', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
@@ -43,23 +43,37 @@ test('TC-YT-022 - Toggle mute', async ({ page }, testInfo) => {
     await testInfo.attach('Step 5', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 6: Click the Mute button', async () => {
-    await page.locator('#mute').click();
+  await test.step('Step 6: Skip the ad if it is displayed', async () => {
+    const showing = page.locator('#movie_player.ad-showing');
+    const closeButton = page.locator('#movie_player .ytp-skip-ad-button, #movie_player .ytp-ad-skip-button, #movie_player .ytp-ad-skip-button-modern').first();
+    if (await showing.waitFor({ state: 'attached', timeout: 5_000 }).then(() => true, () => false)) {
+      await expect(async () => {
+        if (await closeButton.isVisible()) await closeButton.click();
+        await expect(showing).toHaveCount(0, { timeout: 1_000 });
+        await page.waitForTimeout(2_000);
+        expect(await showing.count()).toBe(0);
+      }).toPass({ timeout: 90_000 });
+    }
     await testInfo.attach('Step 6', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 7: Verify that the Mute button contains "Unmute"', async () => {
-    await expect(page.locator('#mute')).toContainText(/Unmute/i);
+  await test.step('Step 7: Click the Mute button', async () => {
+    await page.locator('#movie_player .ytp-chrome-bottom').getByRole('button', { name: /\b(un)?mute\b/i }).first().click();
     await testInfo.attach('Step 7', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 8: Click the Mute button', async () => {
-    await page.locator('#mute').click();
+  await test.step('Step 8: Verify that the Mute button contains "Unmute"', async () => {
+    await expect(page.locator('#movie_player .ytp-chrome-bottom').getByRole('button', { name: /\b(un)?mute\b/i }).first()).toHaveAccessibleName(/\bUnmute\b/i);
     await testInfo.attach('Step 8', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
-  await test.step('Step 9: Verify that the Mute button contains "Mute"', async () => {
-    await expect(page.locator('#mute')).toContainText(/Mute/i);
+  await test.step('Step 9: Click the Mute button', async () => {
+    await page.locator('#movie_player .ytp-chrome-bottom').getByRole('button', { name: /\b(un)?mute\b/i }).first().click();
     await testInfo.attach('Step 9', { body: await page.screenshot(), contentType: 'image/png' });
+  });
+
+  await test.step('Step 10: Verify that the Mute button contains "Mute"', async () => {
+    await expect(page.locator('#movie_player .ytp-chrome-bottom').getByRole('button', { name: /\b(un)?mute\b/i }).first()).toHaveAccessibleName(/\bMute\b/i);
+    await testInfo.attach('Step 10', { body: await page.screenshot(), contentType: 'image/png' });
   });
 });

@@ -58,7 +58,10 @@ export const tneb = {
       // "Consumer No", "Consumer No." and "Consumer Number" are the same field.
       match: [/consumer\s*(no\.?|number|id)\s*(box|field|input|text\s*box)?/i],
       roleHints: ['textbox'],
-      spec: { kind: 'role', role: 'textbox', name: { source: 'consumer\\s*(no|number)', flags: 'i' } },
+      // On the live portal the words beside each box are plain text, not a
+      // <label> tied to it, so the boxes have no accessible name. Each is
+      // found as the first input that follows its caption on the page.
+      spec: { kind: 'css', selector: 'xpath=//*[text()[contains(normalize-space(), "Consumer No")]]/following::input[1]' },
     },
     {
       id: 'tneb.mobileNo',
@@ -68,7 +71,7 @@ export const tneb = {
         /\bmobile\b/i,
       ],
       roleHints: ['textbox'],
-      spec: { kind: 'role', role: 'textbox', name: { source: 'mobile\\s*(no|number)', flags: 'i' } },
+      spec: { kind: 'css', selector: 'xpath=//*[text()[contains(normalize-space(), "Registered Mobile No")]]/following::input[1]' },
     },
     {
       id: 'tneb.billMonth',
@@ -78,7 +81,7 @@ export const tneb = {
         /\b(bill\s*)?month\s*\/?\s*year\b/i,
       ],
       roleHints: ['textbox'],
-      spec: { kind: 'role', role: 'textbox', name: { source: 'month\\s*/?\\s*year', flags: 'i' } },
+      spec: { kind: 'css', selector: 'xpath=//*[text()[contains(normalize-space(), "Bill Month/Year")]]/following::input[1]' },
     },
     {
       id: 'tneb.downloadEnglishButton',

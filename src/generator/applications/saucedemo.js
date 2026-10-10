@@ -52,7 +52,8 @@ export const saucedemo = {
       description: 'Products heading on the inventory page',
       match: [/products?\s*(heading|title|header)/i, /^products$/i],
       roleHints: ['heading'],
-      spec: { kind: 'role', role: 'heading', name: { source: '^products$', flags: 'i' } },
+      // A <span class="title"> on the live site, not a heading element.
+      spec: { kind: 'css', selector: '.title', hasText: { source: '^\\s*products\\s*$', flags: 'i' } },
     },
     {
       id: 'saucedemo.loginError',
@@ -72,14 +73,17 @@ export const saucedemo = {
       description: 'Add to cart button for the Sauce Labs Backpack',
       match: [/add\s*to\s*cart/i, /\badd\b.*\bcart\b/i],
       roleHints: ['button'],
-      spec: { kind: 'css', selector: '[data-test="add-to-cart-sauce-labs-backpack"]' },
+      // The product list names the product in data-test; the product's own
+      // detail page (reached by clicking its name) uses plain "add-to-cart".
+      spec: { kind: 'css', selector: '[data-test="add-to-cart-sauce-labs-backpack"], [data-test="add-to-cart"]' },
     },
     {
       id: 'saucedemo.removeBackpackFromCart',
       description: 'Remove button for the Sauce Labs Backpack',
       match: [/\bremove\b/i, /remove\s*(button)?\s*(for)?\s*backpack/i],
       roleHints: ['button'],
-      spec: { kind: 'css', selector: '[data-test="remove-sauce-labs-backpack"]' },
+      // Same split as Add to cart: list and cart vs. the product detail page.
+      spec: { kind: 'css', selector: '[data-test="remove-sauce-labs-backpack"], [data-test="remove"]' },
     },
     {
       id: 'saucedemo.cartLink',
@@ -141,7 +145,9 @@ export const saucedemo = {
       description: 'product sorting dropdown',
       match: [/sort(ing)?\s*(dropdown|drop\s*down|select|combo\s*box|box)?/i, /product\s*sort/i],
       roleHints: ['combobox'],
-      spec: { kind: 'css', selector: '[data-test="product_sort_container"]' },
+      // The class has stayed put; the data-test value changed from
+      // product_sort_container to product-sort-container on the live site.
+      spec: { kind: 'css', selector: 'select.product_sort_container' },
     },
     {
       id: 'saucedemo.firstProductPrice',

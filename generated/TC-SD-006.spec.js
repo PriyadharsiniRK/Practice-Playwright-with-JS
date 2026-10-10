@@ -28,7 +28,7 @@ test('TC-SD-006 - Checkout', async ({ page }, testInfo) => {
   });
 
   await test.step('Step 1: Add Sauce Labs Backpack to cart', async () => {
-    await page.locator('[data-test="add-to-cart-sauce-labs-backpack"]').click();
+    await page.locator('[data-test="add-to-cart-sauce-labs-backpack"], [data-test="add-to-cart"]').click();
     await testInfo.attach('Step 1', { body: await page.screenshot(), contentType: 'image/png' });
   });
 
