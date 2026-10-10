@@ -38,3 +38,31 @@ test('the Playwright CLI resolves to a real .js file, not a shell shim', () => {
   assert.match(cli, /cli\.js$/);
   assert.equal(existsSync(cli), true);
 });
+
+test('per-test-case results are read from the JSON report, keyed by test case id', async () => {
+  const { readResults } = await import('../src/executor/testExecutor.js');
+  const { mkdtempSync, writeFileSync } = await import('node:fs');
+  const os = await import('node:os');
+  const file = path.join(mkdtempSync(path.join(os.tmpdir(), 'results-')), 'results.json');
+  // Shape of Playwright's json reporter output: suites nest, specs carry tests.
+  writeFileSync(
+    file,
+    JSON.stringify({
+      suites: [
+        { title: 'TC-SD-001.spec.js', specs: [{ title: 'TC-SD-001 - Valid Login', tests: [{ status: 'expected' }] }] },
+        {
+          title: 'TC-SD-003.spec.js',
+          specs: [],
+          suites: [{ title: 'nested', specs: [{ title: 'TC-SD-003 - Add Product to Cart', tests: [{ status: 'unexpected' }] }] }],
+        },
+        { title: 'TC-SD-005.spec.js', specs: [{ title: 'TC-SD-005 - Product Sorting', tests: [{ status: 'flaky' }] }] },
+      ],
+    }),
+  );
+  const results = readResults(file);
+  assert.equal(results.get('TC-SD-001'), 'passed');
+  assert.equal(results.get('TC-SD-003'), 'failed');
+  assert.equal(results.get('TC-SD-005'), 'flaky');
+  // A missing file means no results, not a crash.
+  assert.equal(readResults(path.join(os.tmpdir(), 'does-not-exist.json')).size, 0);
+});

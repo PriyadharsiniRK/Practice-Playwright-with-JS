@@ -30,7 +30,7 @@ test('TC-SD-003 - Add Product to Cart', async ({ page }, testInfo) => {
   });
 
   await test.step('Step 2: Click Add to cart', async () => {
-    await page.locator('[data-test="add-to-cart-sauce-labs-backpack"]').click();
+    await page.locator('[data-test="add-to-cart-sauce-labs-backpack"], [data-test="add-to-cart"]').click();
     await testInfo.attach('Step 2', { body: await page.screenshot(), contentType: 'image/png' });
   });
 

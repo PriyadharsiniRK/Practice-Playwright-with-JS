@@ -22,7 +22,7 @@ import {
   applicationForDocument,
   applicationForTestCase,
 } from './generator/applications/index.js';
-import { REPORT_PATH, runTests, showReport as spawnReportServer } from './executor/testExecutor.js';
+import { REPORT_PATH, readResults, runTests, showReport as spawnReportServer } from './executor/testExecutor.js';
 import { logger } from './util/logger.js';
 
 loadProjectEnv();
@@ -225,6 +225,27 @@ function generate(analyzed, options) {
   return written;
 }
 
+/** One line per test case with its own result, then the totals. */
+function reportOutcomes(ids, exitCode) {
+  const outcomes = readResults();
+  if (outcomes.size === 0) {
+    // No per-test results (the run could not start): fall back to the exit code.
+    if (exitCode === 0) logger.step(`${ids.join(', ')} passed`);
+    else logger.error(`Test run failed (Playwright exit code ${exitCode})`);
+    return;
+  }
+  const counts = {};
+  for (const id of ids) {
+    const outcome = outcomes.get(id) ?? 'not run';
+    counts[outcome] = (counts[outcome] ?? 0) + 1;
+    if (outcome === 'passed') logger.step(`${id} passed`);
+    else if (outcome === 'flaky') logger.warn(`${id} passed on retry (flaky)`);
+    else if (outcome === 'skipped') logger.warn(`${id} skipped`);
+    else logger.error(`${id} ${outcome}`);
+  }
+  logger.info(Object.entries(counts).map(([outcome, n]) => `${n} ${outcome}`).join(', '));
+}
+
 async function showReport() {
   if (!fs.existsSync(REPORT_PATH)) {
     logger.warn(`No report at ${REPORT_PATH}. Run the tests first.`);
@@ -275,9 +296,7 @@ async function main() {
         testDir: options.outDir,
       });
       logger.blank();
-      const names = analyzed.map((entry) => entry.canonical.id).join(', ');
-      if (exitCode === 0) logger.step(`${names} passed`);
-      else logger.error(`${names} failed (Playwright exit code ${exitCode})`);
+      reportOutcomes(analyzed.map((entry) => entry.canonical.id), exitCode);
       logger.heading('Report:');
       logger.info(reportPath);
       return Math.max(exitCode, reportSkipped(skipped));

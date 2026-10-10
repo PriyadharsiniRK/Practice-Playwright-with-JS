@@ -73,14 +73,17 @@ export const saucedemo = {
       description: 'Add to cart button for the Sauce Labs Backpack',
       match: [/add\s*to\s*cart/i, /\badd\b.*\bcart\b/i],
       roleHints: ['button'],
-      spec: { kind: 'css', selector: '[data-test="add-to-cart-sauce-labs-backpack"]' },
+      // The product list names the product in data-test; the product's own
+      // detail page (reached by clicking its name) uses plain "add-to-cart".
+      spec: { kind: 'css', selector: '[data-test="add-to-cart-sauce-labs-backpack"], [data-test="add-to-cart"]' },
     },
     {
       id: 'saucedemo.removeBackpackFromCart',
       description: 'Remove button for the Sauce Labs Backpack',
       match: [/\bremove\b/i, /remove\s*(button)?\s*(for)?\s*backpack/i],
       roleHints: ['button'],
-      spec: { kind: 'css', selector: '[data-test="remove-sauce-labs-backpack"]' },
+      // Same split as Add to cart: list and cart vs. the product detail page.
+      spec: { kind: 'css', selector: '[data-test="remove-sauce-labs-backpack"], [data-test="remove"]' },
     },
     {
       id: 'saucedemo.cartLink',
